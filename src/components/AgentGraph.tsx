@@ -1,0 +1,103 @@
+'use client';
+import { useCallback, useState } from 'react';
+import {
+  ReactFlow,
+  MiniMap,
+  Controls,
+  Background,
+  BackgroundVariant,
+  useNodesState,
+  useEdgesState,
+  type Node,
+  type Edge,
+  type OnConnect,
+  addEdge,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import { AnimatePresence } from 'framer-motion';
+import { AgentNode } from './AgentNode';
+import { AgentCard } from './AgentCard';
+import type { Agent, AgentRelation } from '@/types/agent';
+
+type AgentNodeData = Agent & Record<string, unknown>;
+type AgentFlowNode = Node<AgentNodeData>;
+
+const nodeTypes = { agentNode: AgentNode };
+
+const POSITIONS: Record<string, { x: number; y: number }> = {
+  hal9000: { x: 350, y: 0 },
+  mother: { x: 350, y: 150 },
+  data: { x: 0, y: 330 },
+  atlas: { x: 140, y: 330 },
+  prometheus: { x: 280, y: 330 },
+  tars: { x: 420, y: 330 },
+  ash: { x: 560, y: 330 },
+  skynet: { x: 700, y: 330 },
+};
+
+function buildNodes(agents: Agent[]): AgentFlowNode[] {
+  return agents.map((a) => ({
+    id: a.id,
+    type: 'agentNode',
+    position: POSITIONS[a.id] ?? { x: Math.random() * 700, y: 400 },
+    data: a as AgentNodeData,
+  }));
+}
+
+function buildEdges(relations: AgentRelation[]): Edge[] {
+  return relations.map((r, i) => ({
+    id: `e${i}`,
+    source: r.source,
+    target: r.target,
+    label: r.label,
+    animated: r.source === 'hal9000',
+    style: { stroke: '#6366f1', strokeWidth: 2 },
+    labelStyle: { fill: '#94a3b8', fontSize: 11 },
+    labelBgStyle: { fill: '#1e293b' },
+  }));
+}
+
+export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: AgentRelation[] }) {
+  const [nodes, , onNodesChange] = useNodesState<AgentFlowNode>(buildNodes(agents));
+  const [edges, setEdges, onEdgesChange] = useEdgesState(buildEdges(relations));
+  const [selected, setSelected] = useState<Agent | null>(null);
+
+  const onConnect: OnConnect = useCallback(
+    (conn) => setEdges((eds) => addEdge(conn, eds)),
+    [setEdges]
+  );
+
+  const onNodeClick = useCallback(
+    (_: React.MouseEvent, node: AgentFlowNode) => {
+      setSelected(agents.find((a) => a.id === node.id) ?? null);
+    },
+    [agents]
+  );
+
+  return (
+    <div className="relative w-full h-full" data-testid="agent-graph">
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onConnect={onConnect}
+        onNodeClick={onNodeClick}
+        nodeTypes={nodeTypes}
+        fitView
+        colorMode="dark"
+      >
+        <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#334155" />
+        <Controls />
+        <MiniMap nodeColor="#6366f1" maskColor="rgba(15,23,42,0.8)" />
+      </ReactFlow>
+      <AnimatePresence>
+        {selected && (
+          <div className="absolute bottom-6 right-6 z-10">
+            <AgentCard agent={selected} onClose={() => setSelected(null)} />
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
