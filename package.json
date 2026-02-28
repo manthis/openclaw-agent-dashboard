@@ -7,8 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
+    "test": "jest --runInBand",
+    "test:coverage": "jest --coverage --watchAll=false --forceExit --runInBand",
     "test:e2e": "playwright test"
   },
   "dependencies": {
