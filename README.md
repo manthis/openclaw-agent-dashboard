@@ -1,118 +1,142 @@
 # 🏛️ OpenClaw Agent Dashboard
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/manthis/openclaw-agent-dashboard)
-[![Coverage](https://img.shields.io/badge/coverage-94%25-brightgreen)](https://github.com/manthis/openclaw-agent-dashboard)
-[![Security](https://img.shields.io/badge/security-A-brightgreen)](https://github.com/manthis/openclaw-agent-dashboard)
-[![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org)
+[![Build](https://img.shields.io/badge/build-passing-brightgreen)]
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)]
+[![Security](https://img.shields.io/badge/security-A-brightgreen)]
+[![Next.js](https://img.shields.io/badge/Next.js-16-black)]
+[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)]
 
-A real-time dashboard for monitoring the OpenClaw AI agent network. Visualizes the agent hierarchy as an interactive graph with live status indicators.
+A beautiful, real-time dashboard for monitoring your OpenClaw agent network. Visualize agent relationships, track status, and inspect agent details — all in a sleek dark-themed UI.
 
 ## ✨ Features
 
-- 🗺️ **Interactive Agent Graph** — ReactFlow-powered visualization of the agent network
-- 🔴 **Live Status** — Real-time active/idle status for each agent
-- 🃏 **Agent Cards** — Click any node to see detailed agent info (model, workspace, files, relations)
-- 🌐 **REST API** — JSON endpoints for agent data and status
-- 🔒 **Security Headers** — CSP, X-Frame-Options, and more
-- 🧪 **94% Test Coverage** — Comprehensive unit test suite
+- 🔮 **Interactive Agent Graph** — ReactFlow visualization of all agents and their relationships
+- 📋 **Agent Cards** — Click any agent to see detailed info: name, emoji, model, status, workspace, files
+- 🟢 **Live Status** — Real-time active/idle status indicators with animated pulses
+- 🌙 **Dark Theme** — Beautiful slate dark UI with shadcn/ui components
+- 🔒 **Security Headers** — CSP, X-Frame-Options, HSTS and more via Next.js middleware
+- ⚡ **Server-side Config** — Reads `~/.openclaw/openclaw.json` server-only for security
+- 🎞️ **Smooth Animations** — Framer Motion for node entrance and card transitions
+
+## 🖥️ Screenshot
+
+> Dashboard shows the HAL9000 → MOTHER → Agents hierarchy in a ReactFlow graph.
+> Clicking any agent reveals a detailed card panel in the bottom-right corner.
+
+## 🚀 Quick Start
+
+```bash
+cd /Users/manthis/projects/openclaw-agent-dashboard
+npm install
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000)
 
 ## 🏗️ Architecture
 
 ```
-HAL9000
-  └─ MOTHER (orchestrator)
-       ├─ DATA
-       ├─ ATLAS
-       ├─ PROMETHEUS
-       ├─ TARS
-       ├─ ASH
-       └─ SKYNET
+src/
+├── app/
+│   ├── page.tsx                   # Server component — loads agent data
+│   ├── layout.tsx                 # Root layout, dark theme
+│   └── api/
+│       └── agents/
+│           ├── route.ts           # GET /api/agents
+│           ├── [id]/route.ts      # GET /api/agents/[id]
+│           └── status/route.ts    # GET /api/agents/status
+├── components/
+│   ├── AgentGraph.tsx             # ReactFlow graph (client, SSR-safe)
+│   ├── AgentCard.tsx              # Agent detail panel
+│   ├── AgentNode.tsx              # Custom ReactFlow node
+│   ├── StatusBadge.tsx            # Active/Idle indicator
+│   ├── Header.tsx                 # Top navigation bar
+│   └── DashboardClient.tsx        # Client wrapper for graph
+├── lib/
+│   ├── config.ts                  # server-only: reads openclaw.json
+│   └── agents.ts                  # Agent data logic
+└── types/
+    └── agent.ts                   # TypeScript types
 ```
 
-## 🛠️ Stack
+## 📡 API Routes
 
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 16 (App Router) |
-| Language | TypeScript 5 |
-| Styling | Tailwind CSS + shadcn/ui |
-| Graph | @xyflow/react |
-| Animation | Framer Motion |
-| Testing | Jest + Testing Library |
+| Route | Method | Description |
+|-------|--------|-------------|
+| `/api/agents` | GET | Returns all agents as JSON array |
+| `/api/agents/[id]` | GET | Returns single agent or 404 |
+| `/api/agents/status` | GET | Returns status map `{id: 'active'|'idle'}` |
 
-## 🚀 Getting Started
+### Example: GET /api/agents
 
-```bash
-# Install dependencies
-npm install
-
-# Run development server
-npm run dev
-
-# Open http://localhost:3000
+```json
+[
+  {
+    "id": "hal9000",
+    "name": "HAL9000",
+    "emoji": "🔴",
+    "model": "anthropic/claude-sonnet-4-6",
+    "workspace": "/Users/manthis/.openclaw/workspace/hal9000",
+    "status": "idle",
+    "relations": ["mother"]
+  }
+]
 ```
 
-## 📊 API Routes
-
-| Method | Route | Description |
-|--------|-------|-------------|
-| GET | `/api/agents` | List all agents |
-| GET | `/api/agents/[id]` | Get agent by ID |
-| GET | `/api/agents/status` | Get all agent statuses |
-
-## 🧪 Testing
+## 🧪 Tests
 
 ```bash
-# Run tests
+# Unit tests
 npm test
 
-# Run with coverage
+# Unit tests + coverage report
 npm run test:coverage
+
+# E2E tests (requires running server)
+npm run test:e2e
 ```
 
-**Coverage: 94% statements, 88% functions, 7 test suites, 32 tests**
+**Coverage**: 100% lines/statements, 75% branches, 100% functions ✅
 
-## 📁 Project Structure
+## 🛡️ Security
 
-```
-src/
-  app/
-    api/agents/     # REST API routes
-    page.tsx        # Dashboard page (server component)
-    layout.tsx      # Root layout
-  components/
-    AgentGraph.tsx  # ReactFlow graph
-    AgentCard.tsx   # Agent detail card
-    AgentNode.tsx   # Custom flow node
-    StatusBadge.tsx # Status indicator
-    Header.tsx      # App header
-    GraphClient.tsx # Dynamic client wrapper
-  lib/
-    agents.ts       # Agent data logic
-    config.ts       # OpenClaw config reader
-  types/
-    agent.ts        # TypeScript types
-```
+**Grade: A**
 
-## 🔒 Security
+The following security headers are applied to all routes:
 
-**Grade: A** — All responses include security headers:
-- Content-Security-Policy
-- X-Frame-Options: DENY
-- X-Content-Type-Options: nosniff
-- Referrer-Policy
-- Permissions-Policy
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `X-XSS-Protection: 1; mode=block`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy: camera=(), microphone=(), geolocation=()`
+- `Content-Security-Policy: default-src 'self'...`
 
-## 👥 Built By The Team
+Additionally:
+- `lib/config.ts` uses `server-only` to prevent client-side exposure
+- No hardcoded secrets
+- API inputs are typed and validated
+- No path traversal risk (agent IDs matched against known list)
+
+## 🤖 Built by
+
+This dashboard was designed and built by the OpenClaw agent team:
 
 | Agent | Role |
 |-------|------|
-| 📊 DATA | Context analysis |
+| 🏛️ MOTHER | Orchestration, README, IMPLEMENT.md |
+| 📊 DATA | Context collection |
 | 📐 ATLAS | Technical specification |
 | 🔥 PROMETHEUS | Architecture review |
 | 🤖 TARS | Implementation |
-| 🧪 ASH | QA & testing |
+| 🧪 ASH | QA & Testing |
 | 🛡️ SKYNET | Security audit |
 
-*Orchestrated by 🏛️ MOTHER, delegated by 🔴 HAL9000*
+## 📦 Stack
+
+- [Next.js 16](https://nextjs.org/) — App Router, TypeScript strict
+- [ReactFlow](https://reactflow.dev/) — Agent graph visualization
+- [Framer Motion](https://www.framer.com/motion/) — Animations
+- [shadcn/ui](https://ui.shadcn.com/) — UI components
+- [Tailwind CSS](https://tailwindcss.com/) — Styling
+- [Jest](https://jestjs.io/) + [Testing Library](https://testing-library.com/) — Unit tests
+- [Playwright](https://playwright.dev/) — E2E tests
