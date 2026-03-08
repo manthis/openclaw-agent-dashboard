@@ -23,7 +23,7 @@ function AgentAvatar({ agent }: { agent: Agent }) {
   const [err, setErr] = useState(false);
   if (agent.avatar && !err) {
     return (
-      <div className='w-14 h-14 rounded-full overflow-hidden border-2 border-slate-700 flex-shrink-0'>
+      <div className='w-14 h-14 rounded-full overflow-hidden border-2 border-gray-200 dark:border-slate-700 flex-shrink-0'>
         <Image
           src={`/api/agents/${agent.id}/avatar`}
           alt={agent.name}
@@ -52,15 +52,15 @@ function TagsInput({ tags, onChange, placeholder }: { tags: string[]; onChange: 
     }
   };
   return (
-    <div className='flex flex-wrap gap-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 min-h-[40px]'>
+    <div className='flex flex-wrap gap-1 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-2 py-1.5 min-h-[40px]'>
       {tags.map((t) => (
-        <span key={t} className='flex items-center gap-1 bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded'>
+        <span key={t} className='flex items-center gap-1 bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-slate-200 text-xs px-2 py-0.5 rounded'>
           {t}
-          <button type='button' onClick={() => onChange(tags.filter((x) => x !== t))} className='text-slate-400 hover:text-red-400 leading-none'>&times;</button>
+          <button type='button' onClick={() => onChange(tags.filter((x) => x !== t))} className='text-gray-400 dark:text-slate-400 hover:text-red-400 leading-none'>&times;</button>
         </span>
       ))}
       <input
-        className='flex-1 min-w-[120px] bg-transparent text-slate-200 text-sm outline-none py-0.5'
+        className='flex-1 min-w-[120px] bg-transparent text-gray-900 dark:text-slate-200 text-sm outline-none py-0.5'
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKey}
@@ -78,17 +78,17 @@ function SectionPanel({
   onToggle: () => void; onSave: () => void; saving: boolean; children: React.ReactNode;
 }) {
   return (
-    <div className='border-t border-slate-700/50'>
+    <div className='border-t border-gray-200 dark:border-slate-700/50'>
       <button
         type='button'
-        className='w-full flex items-center justify-between px-3 md:px-6 py-3 text-left hover:bg-slate-800/30 transition-colors'
+        className='w-full flex items-center justify-between px-3 md:px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-slate-800/30 transition-colors'
         onClick={onToggle}
       >
-        <span className='flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider'>
+        <span className='flex items-center gap-2 text-gray-500 dark:text-slate-400 text-xs uppercase tracking-wider'>
           {title}
           {dirty && <span className='w-2 h-2 rounded-full bg-amber-500 inline-block' title='Unsaved changes' />}
         </span>
-        <span className='text-slate-600'>{open ? '▾' : '▸'}</span>
+        <span className='text-gray-400 dark:text-slate-600'>{open ? '▾' : '▸'}</span>
       </button>
       {open && (
         <div className='px-3 md:px-6 pb-4 space-y-3'>
