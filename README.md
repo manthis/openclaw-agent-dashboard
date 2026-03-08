@@ -23,8 +23,12 @@ A beautiful, real-time dashboard for monitoring your OpenClaw agent network. Vis
 ### Dashboard principal
 ![Dashboard](public/screenshots/dashboard-main.png)
 
-> Vue principale du dashboard : graphe ReactFlow de la hiérarchie HAL9000 → MOTHER → Agents.
-> Cliquer sur un agent affiche un panneau de détails en bas à droite.
+> Vue principale : graphe ReactFlow de la hiérarchie HAL9000 → MOTHER → Agents.
+
+### Détail d'un agent
+![Agent Detail](public/screenshots/dashboard-agent-detail.png)
+
+> Cliquer sur un agent affiche un panneau de détails en bas à droite (nom, modèle, statut, workspace, fichiers).
 
 ## 🚀 Quick Start
 
