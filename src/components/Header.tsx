@@ -35,9 +35,30 @@ export function Header() {
 
   const isDark = resolvedTheme === 'dark';
 
-  const dotClass = connected
-    ? 'bg-emerald-400 ring-2 ring-emerald-300/60 shadow-[0_0_6px_rgba(52,211,153,0.9),0_0_16px_rgba(52,211,153,0.9),0_0_28px_rgba(52,211,153,0.55)]'
-    : 'bg-rose-400 ring-2 ring-rose-300/60 shadow-[0_0_6px_rgba(251,113,133,0.9),0_0_16px_rgba(251,113,133,0.9),0_0_28px_rgba(251,113,133,0.55)]';
+  const dotBase =
+    'relative inline-block w-4 h-4 rounded-full animate-pulse ring-2';
+
+  const dotColor = connected
+    ? 'bg-emerald-300 ring-emerald-200/70'
+    : 'bg-rose-300 ring-rose-200/70';
+
+  const dotGlowStyle: React.CSSProperties = connected
+    ? {
+        boxShadow:
+          '0 0 10px rgba(52,211,153,1), 0 0 26px rgba(52,211,153,0.95), 0 0 60px rgba(52,211,153,0.65)',
+        filter:
+          'drop-shadow(0 0 10px rgba(52,211,153,1)) drop-shadow(0 0 22px rgba(52,211,153,0.9))',
+      }
+    : {
+        boxShadow:
+          '0 0 10px rgba(251,113,133,1), 0 0 26px rgba(251,113,133,0.95), 0 0 60px rgba(251,113,133,0.65)',
+        filter:
+          'drop-shadow(0 0 10px rgba(251,113,133,1)) drop-shadow(0 0 22px rgba(251,113,133,0.9))',
+      };
+
+  const dotHaloClass = connected
+    ? 'bg-emerald-400/55'
+    : 'bg-rose-400/55';
 
   return (
     <header className="border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 backdrop-blur-sm px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
@@ -50,7 +71,12 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
-          <span className={`w-3 h-3 rounded-full inline-block animate-pulse ${dotClass}`} />
+          <span className={`${dotBase} ${dotColor}`} style={dotGlowStyle}>
+            {/* halo layer (helps a lot on iOS Safari where tiny box-shadows can look subtle) */}
+            <span
+              className={`absolute -inset-2 rounded-full blur-md ${dotHaloClass}`}
+            />
+          </span>
           <span
             className={`text-xs md:text-sm ${
               connected
