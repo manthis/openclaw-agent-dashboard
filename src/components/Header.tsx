@@ -2,14 +2,36 @@
 import { useTheme } from 'next-themes';
 import { Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useGatewayActivity } from '@/lib/hooks/use-gateway-activity';
 
 export function Header() {
-  const { connected } = useGatewayActivity();
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [connected, setConnected] = useState<boolean>(false);
 
   useEffect(() => setMounted(true), []);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function check() {
+      try {
+        const res = await fetch('/api/system', { cache: 'no-store' });
+        const data = (await res.json()) as { gateway?: { connected?: boolean } };
+        if (!alive) return;
+        setConnected(Boolean(data?.gateway?.connected));
+      } catch {
+        if (!alive) return;
+        setConnected(false);
+      }
+    }
+
+    check();
+    const id = setInterval(check, 5000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, []);
 
   const isDark = resolvedTheme === 'dark';
 
@@ -29,8 +51,15 @@ export function Header() {
               connected ? 'bg-green-500' : 'bg-red-500'
             }`}
           />
-          <span className={`text-xs md:text-sm ${connected ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-            <span className="hidden md:inline">Gateway: </span>{connected ? 'Connected' : 'Disconnected'}
+          <span
+            className={`text-xs md:text-sm ${
+              connected
+                ? 'text-green-600 dark:text-green-400'
+                : 'text-red-600 dark:text-red-400'
+            }`}
+          >
+            <span className="hidden md:inline">Gateway: </span>
+            {connected ? 'Connected' : 'Disconnected'}
           </span>
         </div>
         {mounted && (
