@@ -33,6 +33,8 @@ export async function GET(req: Request) {
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       let closed = false;
+      let connected = false;
+      const buffer: GatewayFrame[] = [];
 
       const safeClose = () => {
         if (closed) return;
@@ -103,9 +105,22 @@ export async function GET(req: Request) {
           return;
         }
 
+        // Buffer all events until we've confirmed connect.ok,
+        // so the client always sees `connected:true` before activity.
+        if (msg.type === 'event' && !connected) {
+          buffer.push(msg);
+          return;
+        }
+
         if (msg.type === 'res' && msg.id === connectReqId) {
-          if (msg.ok) send('connected', { ok: true });
-          else send('connected', { ok: false, error: msg.error ?? 'connect failed' });
+          if (msg.ok) {
+            connected = true;
+            send('connected', { ok: true });
+            for (const ev of buffer) send('gateway_event', ev);
+            buffer.length = 0;
+          } else {
+            send('connected', { ok: false, error: msg.error ?? 'connect failed' });
+          }
           return;
         }
 
