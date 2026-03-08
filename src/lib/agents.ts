@@ -224,7 +224,7 @@ export function getAgentsStatus(): Record<string, 'active' | 'idle'> {
 
   // 2. Merge with live openclaw sessions (for hal9000)
   try {
-    const output = execFileSync('openclaw', ['sessions', '--active', '--all-agents', '--json'], {
+    const output = execFileSync('openclaw', ['sessions', '--active', '5', '--all-agents', '--json'], {
       timeout: 5000,
       encoding: 'utf-8',
     });
