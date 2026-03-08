@@ -98,25 +98,49 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
     >
       {/* Animated glow ring for active agents */}
       {isActive && (
-        <circle
-          cx={NODE_HALF}
-          cy={NODE_HALF}
-          r={NODE_HALF + 3}
-          fill="none"
-          stroke="url(#activeGlow)"
-          strokeWidth={2}
-          strokeDasharray="20 40"
-          strokeLinecap="round"
-        >
-          <animateTransform
-            attributeName="transform"
-            type="rotate"
-            from={`0 ${NODE_HALF} ${NODE_HALF}`}
-            to={`360 ${NODE_HALF} ${NODE_HALF}`}
-            dur="2s"
-            repeatCount="indefinite"
-          />
-        </circle>
+        <g>
+          {/* Blurred glow layer */}
+          <circle
+            cx={NODE_HALF}
+            cy={NODE_HALF}
+            r={NODE_HALF + 8}
+            fill="none"
+            stroke="#00ff88"
+            strokeWidth={6}
+            strokeDasharray="22 18"
+            strokeLinecap="round"
+            filter="url(#neonBlur)"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from={`0 ${NODE_HALF} ${NODE_HALF}`}
+              to={`360 ${NODE_HALF} ${NODE_HALF}`}
+              dur="1.2s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          {/* Sharp ring on top */}
+          <circle
+            cx={NODE_HALF}
+            cy={NODE_HALF}
+            r={NODE_HALF + 8}
+            fill="none"
+            stroke="#00ff88"
+            strokeWidth={3.5}
+            strokeDasharray="22 18"
+            strokeLinecap="round"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from={`0 ${NODE_HALF} ${NODE_HALF}`}
+              to={`360 ${NODE_HALF} ${NODE_HALF}`}
+              dur="1.2s"
+              repeatCount="indefinite"
+            />
+          </circle>
+        </g>
       )}
 
       <circle
@@ -198,11 +222,9 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
         style={{ display: 'block' }}
       >
         <defs>
-          <linearGradient id="activeGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#22c55e" stopOpacity={0} />
-            <stop offset="50%" stopColor="#22c55e" stopOpacity={1} />
-            <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
-          </linearGradient>
+          <filter id="neonBlur" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+          </filter>
         </defs>
 
         {relations.map((rel, i) => {
