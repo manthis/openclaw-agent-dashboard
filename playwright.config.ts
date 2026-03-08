@@ -5,10 +5,11 @@ export default defineConfig({
   timeout: 30_000,
   use: {
     baseURL: 'http://localhost:9000',
+    trace: 'on-first-retry',
   },
   projects: [
     {
-      name: 'desktop',
+      name: 'desktop-chromium',
       use: { ...devices['Desktop Chrome'] },
     },
     {
@@ -23,6 +24,6 @@ export default defineConfig({
     command: 'npm run dev -- -p 9000',
     url: 'http://localhost:9000',
     reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
+    timeout: 120_000,
   },
 });
