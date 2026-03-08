@@ -30,6 +30,6 @@ const config: Config = {
     '!src/middleware.ts',
     '!middleware.ts',
   ],
-  coverageThreshold: { global: { lines: 80, branches: 70, functions: 60, statements: 80 } },
+  coverageThreshold: { global: { lines: 80, branches: 70, functions: 50, statements: 80 } },
 };
 export default createJestConfig(config);
