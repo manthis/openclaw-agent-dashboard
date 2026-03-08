@@ -3,7 +3,14 @@ import fs from 'fs';
 import path from 'path';
 import { readOpenClawConfig } from '@/lib/config';
 
-const ALLOWED_FILES = ['SOUL.md', 'USER.md', 'AGENTS.md', 'HEARTBEAT.md', 'TOOLS.md', 'MEMORY.md', 'IDENTITY.md'];
+const ALLOWED_STEMS = ['SOUL', 'USER', 'AGENTS', 'HEARTBEAT', 'TOOLS', 'MEMORY', 'IDENTITY'];
+
+function normalizeStem(filename: string): string | null {
+  // Accept 'soul', 'soul.md', 'SOUL', 'SOUL.MD', 'SOUL.md' -> 'SOUL'
+  const stem = filename.replace(/\.md$/i, '').toUpperCase();
+  if (!ALLOWED_STEMS.includes(stem)) return null;
+  return stem;
+}
 
 function getWorkspace(id: string): string | null {
   const config = readOpenClawConfig();
@@ -22,18 +29,15 @@ export async function GET(
     return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
   }
 
-  const upper = filename.toUpperCase();
-  if (!ALLOWED_FILES.includes(upper)) {
+  const stem = normalizeStem(filename);
+  if (!stem) {
     return NextResponse.json({ error: 'File not allowed' }, { status: 400 });
   }
 
   const ws = getWorkspace(id);
   if (!ws) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
-  const resolved = path.resolve(ws, upper);
-  if (!resolved.startsWith(path.resolve(ws) + path.sep) && resolved !== path.resolve(ws, upper)) {
-    return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
-  }
+  const resolved = path.resolve(ws, `${stem}.md`);
   // Strict containment check
   if (path.dirname(resolved) !== path.resolve(ws)) {
     return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
@@ -41,9 +45,9 @@ export async function GET(
 
   try {
     const content = fs.readFileSync(resolved, 'utf-8');
-    return new Response(content, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    return NextResponse.json({ content });
   } catch {
-    return new Response('', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    return NextResponse.json({ content: '' });
   }
 }
 
@@ -58,15 +62,15 @@ export async function PUT(
       return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
     }
 
-    const upper = filename.toUpperCase();
-    if (!ALLOWED_FILES.includes(upper)) {
+    const stem = normalizeStem(filename);
+    if (!stem) {
       return NextResponse.json({ error: 'File not allowed' }, { status: 400 });
     }
 
     const ws = getWorkspace(id);
     if (!ws) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
 
-    const resolved = path.resolve(ws, upper);
+    const resolved = path.resolve(ws, `${stem}.md`);
     if (path.dirname(resolved) !== path.resolve(ws)) {
       return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
     }
