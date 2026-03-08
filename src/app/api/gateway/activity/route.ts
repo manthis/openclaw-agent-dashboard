@@ -18,8 +18,15 @@ function uuid(): string {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
-export async function GET() {
+function inferOrigin(req: Request): string {
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:9000';
+  const proto = req.headers.get('x-forwarded-proto') || 'http';
+  return `${proto}://${host}`;
+}
+
+export async function GET(req: Request) {
   const encoder = new TextEncoder();
+  const origin = inferOrigin(req);
 
   let cleanup: (() => void) | null = null;
 
@@ -43,12 +50,15 @@ export async function GET() {
           controller.enqueue(encoder.encode(`event: ${event}\n`));
           controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
         } catch {
-          // If the controller is already closed, stop writing.
           closed = true;
         }
       };
 
-      const ws = new WebSocket(GATEWAY_WS_URL);
+      const ws = new WebSocket(GATEWAY_WS_URL, {
+        headers: {
+          Origin: origin,
+        },
+      });
 
       const connectReqId = uuid();
       const connectFrame: GatewayFrame = {
@@ -79,7 +89,7 @@ export async function GET() {
       }, 15000);
 
       ws.on('open', () => {
-        send('status', { phase: 'ws_open' });
+        send('status', { phase: 'ws_open', origin });
         ws.send(JSON.stringify(connectFrame));
       });
 
