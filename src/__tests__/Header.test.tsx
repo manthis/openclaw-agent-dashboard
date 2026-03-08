@@ -13,8 +13,8 @@ describe('Header', () => {
     expect(screen.getByText('Agent Network Monitor')).toBeInTheDocument();
   });
 
-  it('renders Live indicator', () => {
+  it('renders Gateway status indicator', () => {
     render(<Header />);
-    expect(screen.getByText('Live')).toBeInTheDocument();
+    expect(screen.getByText('Gateway: Disconnected')).toBeInTheDocument();
   });
 });

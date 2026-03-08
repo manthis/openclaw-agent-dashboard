@@ -21,13 +21,13 @@ const nodeTypes = { agentNode: AgentNode };
 
 const POSITIONS: Record<string, { x: number; y: number }> = {
   hal9000: { x: 550, y: 0 },
-  mother: { x: 550, y: 300 },
-  data: { x: 0, y: 620 },
-  atlas: { x: 220, y: 620 },
-  prometheus: { x: 440, y: 620 },
-  tars: { x: 660, y: 620 },
-  ash: { x: 880, y: 620 },
-  skynet: { x: 1100, y: 620 },
+  mother: { x: 550, y: 120 },
+  data: { x: 0, y: 320 },
+  atlas: { x: 280, y: 320 },
+  prometheus: { x: 560, y: 320 },
+  tars: { x: 840, y: 320 },
+  ash: { x: 1120, y: 320 },
+  skynet: { x: 1400, y: 320 },
 };
 
 function buildNodes(agents: Agent[]): AgentNodeType[] {
@@ -80,8 +80,8 @@ export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: 
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.3 }}
-        minZoom={0.3}
+        fitViewOptions={{ padding: 0.6 }}
+        minZoom={0.2}
         colorMode="dark"
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#334155" />
