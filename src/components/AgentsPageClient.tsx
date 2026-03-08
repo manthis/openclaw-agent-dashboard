@@ -60,10 +60,10 @@ function AgentEditPanel({
 
   const loadFile = useCallback(async (file: WorkspaceFile) => {
     if (fileContents[file] !== undefined) return;
-    const res = await fetch(`/api/agents/${agent.id}/files/${file.toLowerCase()}`);
+    const res = await fetch(`/api/agents/${agent.id}/files/${file}.md`);
     if (res.ok) {
-      const data = await res.json() as { content: string };
-      setFileContents((prev) => ({ ...prev, [file]: data.content ?? '' }));
+      const text = await res.text();
+      setFileContents((prev) => ({ ...prev, [file]: text }));
     }
   }, [agent.id, fileContents]);
 
@@ -102,7 +102,7 @@ function AgentEditPanel({
   const handleFileSave = async () => {
     setFileSaving(true);
     const content = fileContents[activeFile] ?? '';
-    const res = await fetch(`/api/agents/${agent.id}/files/${activeFile.toLowerCase()}`, {
+    const res = await fetch(`/api/agents/${agent.id}/files/${activeFile}.md`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
