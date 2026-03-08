@@ -198,50 +198,27 @@ interface ActiveLineProps {
 }
 
 function ActiveConnectionLine({ x1, y1, x2, y2, lineKey }: ActiveLineProps) {
-  // Compute path length for dash animation
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len = Math.sqrt(dx * dx + dy * dy);
-  const dashLen = Math.min(12, len * 0.25);
-  const gapLen = Math.min(20, len * 0.4);
-  const dashArray = `${dashLen} ${gapLen}`;
-
+  const dashLen = Math.min(10, len * 0.2);
+  const gapLen = Math.min(8, len * 0.15);
   return (
-    <g>
-      {/* Glow layer */}
-      <line
-        x1={x1} y1={y1} x2={x2} y2={y2}
-        stroke="#d400ff"
-        strokeWidth={6}
-        strokeLinecap="round"
-        filter="url(#neonPurpleBlur)"
-        opacity={0.6}
+    <line
+      x1={x1} y1={y1} x2={x2} y2={y2}
+      stroke="#d400ff"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeDasharray={`${dashLen} ${gapLen}`}
+    >
+      <animate
+        attributeName="stroke-dashoffset"
+        from={len}
+        to={0}
+        dur="0.8s"
+        repeatCount="indefinite"
       />
-      {/* Sharp animated dash layer */}
-      <line
-        x1={x1} y1={y1} x2={x2} y2={y2}
-        stroke="#d400ff"
-        strokeWidth={2.5}
-        strokeLinecap="round"
-        strokeDasharray={dashArray}
-      >
-        <animate
-          attributeName="stroke-dashoffset"
-          from={len}
-          to={0}
-          dur="0.8s"
-          repeatCount="indefinite"
-        />
-      </line>
-      {/* Travelling packet dot */}
-      <circle r={3} fill="#f0aaff" opacity={0.9} filter="url(#neonPurpleBlur)">
-        <animateMotion
-          dur="1.2s"
-          repeatCount="indefinite"
-          path={`M${x1},${y1} L${x2},${y2}`}
-        />
-      </circle>
-    </g>
+    </line>
   );
 }
 
