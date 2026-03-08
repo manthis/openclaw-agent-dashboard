@@ -9,6 +9,7 @@ import { ModelComboBox } from './agents/ModelComboBox';
 import { ModelMultiSelect } from './agents/ModelMultiSelect';
 import { DirectoryPickerField } from './agents/DirectoryPickerField';
 import { AgentMultiSelect } from './agents/AgentMultiSelect';
+import { Trash2 } from 'lucide-react';
 
 const WORKSPACE_FILES = ['SOUL', 'IDENTITY', 'TOOLS', 'MEMORY', 'USER', 'AGENTS', 'HEARTBEAT'] as const;
 type WorkspaceFile = typeof WORKSPACE_FILES[number];
@@ -255,12 +256,7 @@ function AgentEditPanel({
               <p className='text-slate-400 text-xs font-mono'>{agent.id}</p>
             </div>
           </div>
-          <div className='flex items-center gap-3'>
-            <button onClick={() => void handleDelete()} disabled={deleting} className='bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-400 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors'>
-              {deleting ? 'Deleting...' : 'Delete'}
-            </button>
-            <button onClick={onClose} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
-          </div>
+          <button onClick={onClose} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
         </div>
 
         {/* IDENTITY */}
@@ -375,6 +371,14 @@ function AgentEditPanel({
           <textarea className='w-full h-48 bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono rounded-lg p-3 focus:outline-none focus:border-indigo-500 resize-y' value={fileContents[activeFile] ?? ''} onChange={(e) => setFileContents((prev) => ({ ...prev, [activeFile]: e.target.value }))} placeholder={`${activeFile}.md content...`} />
           <button onClick={() => void handleFileSave()} disabled={fileSaving} className='mt-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors'>
             {fileSaving ? 'Saving...' : `Save ${activeFile}.md`}
+          </button>
+        </div>
+
+        {/* DELETE */}
+        <div className='px-3 md:px-6 pb-6 pt-4 border-t border-slate-700/50'>
+          <button onClick={() => void handleDelete()} disabled={deleting} className='w-full flex items-center justify-center gap-2 bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-400 text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
+            <Trash2 className='w-4 h-4' />
+            {deleting ? 'Deleting...' : 'Delete agent'}
           </button>
         </div>
       </div>
