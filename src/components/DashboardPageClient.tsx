@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Users, Network, Settings, Github, Wifi, WifiOff, Activity, Cpu, MemoryStick } from 'lucide-react';
 import { useGatewayActivity } from '@/lib/hooks/use-gateway-activity';
+import { CpuMemHistorySection } from '@/components/CpuMemHistorySection';
 
 interface SystemData {
   gateway: { connected: boolean };
@@ -116,6 +117,7 @@ export function DashboardPageClient() {
             </div>
           </div>
         </section>
+        <CpuMemHistorySection />
 
         <section>
           <h2 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3">Quick Actions</h2>

@@ -48,8 +48,7 @@ export function useGatewayActivity() {
   useEffect(() => {
     mountedRef.current = true;
 
-    // Use same-origin SSE proxy so mobile clients don't need direct access
-    // to the gateway websocket port.
+    // same-origin SSE proxy so mobile clients don't need direct access
     const es = new EventSource("/api/gateway/activity");
 
     es.addEventListener("connected", (e) => {
@@ -75,7 +74,8 @@ export function useGatewayActivity() {
           summary: makeSummary(frame.event || "event", frame.payload),
           raw: frame,
         };
-        setEvents((prev) => [...prev.slice(-49), ge]);
+        // newest first
+        setEvents((prev) => [ge, ...prev].slice(0, 50));
       } catch {
         // ignore
       }
