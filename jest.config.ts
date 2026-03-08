@@ -18,6 +18,7 @@ const config: Config = {
     '!src/**/*.d.ts',
     '!src/app/layout.tsx',
     '!src/app/page.tsx',
+    '!src/app/agents/page.tsx',
     '!src/components/ui/**',
     '!src/types/**',
     '!src/lib/utils.ts',
