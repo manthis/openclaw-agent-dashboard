@@ -291,7 +291,7 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
           const to = positions.find((p) => p.agent.id === rel.target);
           if (!from || !to) return null;
           const isActiveLink =
-            from.agent.status === 'active' || to.agent.status === 'active';
+            from.agent.status === 'active' && to.agent.status === 'active';
           if (isActiveLink) {
             return (
               <ActiveConnectionLine
