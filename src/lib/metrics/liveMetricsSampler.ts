@@ -102,8 +102,7 @@ export class LiveMetricsSampler {
 
     // Don't keep the process alive just for metrics.
     // (Next.js will keep the route alive as needed.)
-    // @ts-expect-error unref exists in Node, not in some TS DOM libs
-    this.timer.unref?.();
+    (this.timer as any).unref?.();
   }
 
   stop() {
