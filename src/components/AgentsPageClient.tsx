@@ -370,7 +370,7 @@ function AgentEditPanel({
               <button key={f} onClick={() => setActiveFile(f)} className={`text-xs px-3 py-1 rounded font-mono transition-colors ${activeFile === f ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}>{f}.md</button>
             ))}
           </div>
-          <textarea className='w-full h-48 bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono rounded-lg p-3 focus:outline-none focus:border-indigo-500 resize-y' value={fileContents[activeFile] ?? ''} onChange={(e) => setFileContents((prev) => ({ ...prev, [activeFile]: e.target.value }))} placeholder={`${activeFile}.md content...`} />
+          <textarea className='w-full h-48 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 text-xs font-mono rounded-lg p-3 focus:outline-none focus:border-indigo-500 resize-y' value={fileContents[activeFile] ?? ''} onChange={(e) => setFileContents((prev) => ({ ...prev, [activeFile]: e.target.value }))} placeholder={`${activeFile}.md content...`} />
           <button onClick={() => void handleFileSave()} disabled={fileSaving} className='mt-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors'>
             {fileSaving ? 'Saving...' : `Save ${activeFile}.md`}
           </button>
