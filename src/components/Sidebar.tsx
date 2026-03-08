@@ -1,11 +1,12 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, Settings, Bot } from 'lucide-react';
+import { LayoutDashboard, Network, Users, Settings, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/agents-map', label: 'Agents Map', icon: Network },
   { href: '/agents', label: 'Agents', icon: Users },
   { href: '/config', label: 'Config', icon: Settings },
 ];
