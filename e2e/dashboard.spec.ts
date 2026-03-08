@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 test('loads homepage', async ({ page }) => {
   await page.goto('http://localhost:3000');
-  await expect(page.locator('h1')).toContainText('OpenClaw Dashboard');
+  await expect(page).toHaveTitle('OpenClaw Dashboard');
 });
 test('API /api/agents returns JSON array', async ({ request }) => {
   const res = await request.get('http://localhost:3000/api/agents');

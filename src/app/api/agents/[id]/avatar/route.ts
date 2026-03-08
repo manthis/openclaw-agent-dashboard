@@ -1,13 +1,22 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { readOpenClawConfig } from '@/lib/config';
+
+const AVATAR_BASE = path.join(os.homedir(), '.openclaw');
+const ALLOWED_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+
+  if (!/^[a-z0-9_-]{1,64}$/.test(id)) {
+    return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+  }
+
   const config = readOpenClawConfig();
   const agent = config.agents?.list?.find((a: { id: string }) => a.id === id);
   if (!agent) return NextResponse.json({ error: 'Not found' }, { status: 404 });
@@ -19,13 +28,21 @@ export async function GET(
   if (path.isAbsolute(rawAvatar)) {
     avatarPath = rawAvatar;
   } else {
-    const home = process.env.HOME ?? '/Users/manthis';
-    avatarPath = path.join(home, '.openclaw', rawAvatar);
+    avatarPath = path.join(AVATAR_BASE, rawAvatar);
+  }
+
+  const resolvedAvatar = path.resolve(avatarPath);
+  if (!resolvedAvatar.startsWith(AVATAR_BASE + path.sep) && !resolvedAvatar.startsWith(AVATAR_BASE + '/')) {
+    return NextResponse.json({ error: 'Path not allowed' }, { status: 403 });
+  }
+
+  const ext = path.extname(resolvedAvatar).toLowerCase();
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    return NextResponse.json({ error: 'Invalid file type' }, { status: 403 });
   }
 
   try {
-    const buf = fs.readFileSync(avatarPath);
-    const ext = path.extname(avatarPath).toLowerCase();
+    const buf = fs.readFileSync(resolvedAvatar);
     const mime =
       ext === '.png' ? 'image/png' :
       ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' :

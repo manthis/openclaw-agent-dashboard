@@ -1,11 +1,26 @@
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 import { getAgent, updateAgent, deleteAgent } from '@/lib/agents';
+
+const ID_REGEX = /^[a-z0-9_-]{1,64}$/;
+
+const UpdateAgentSchema = z.object({
+  name: z.string().min(1).max(128).optional(),
+  emoji: z.string().min(1).max(8).optional(),
+  theme: z.string().max(256).optional(),
+  model: z.string().min(1).max(256).optional(),
+  workspace: z.string().min(1).max(512).optional(),
+  avatar: z.string().max(512).regex(/^(?!\/)[^\0]*\.(png|jpg|jpeg|gif|webp)$/).optional().or(z.literal('')),
+});
 
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  if (!ID_REGEX.test(id)) {
+    return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+  }
   const agent = getAgent(id);
   if (!agent) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
   return NextResponse.json(agent);
@@ -17,8 +32,15 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    if (!ID_REGEX.test(id)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
     const body = await request.json();
-    const updated = updateAgent(id, body);
+    const parsed = UpdateAgentSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    }
+    const updated = updateAgent(id, parsed.data);
     if (!updated) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     return NextResponse.json(updated);
   } catch {
@@ -32,6 +54,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    if (!ID_REGEX.test(id)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
     const ok = deleteAgent(id);
     if (!ok) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
     return NextResponse.json({ success: true });
