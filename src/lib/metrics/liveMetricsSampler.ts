@@ -40,7 +40,10 @@ async function defaultGetSessionsActive5m() {
   try {
     const output = execSync('openclaw sessions --active 5 --json 2>/dev/null || echo "[]"', { timeout: 5000 }).toString();
     const parsed = JSON.parse(output.trim());
-    return Array.isArray(parsed) ? parsed.length : 0;
+    if (Array.isArray(parsed)) return parsed.length;
+    if (parsed && typeof parsed === "object" && typeof parsed.count === "number") return parsed.count;
+    if (parsed && Array.isArray(parsed.sessions)) return parsed.sessions.length;
+    return 0;
   } catch {
     return 0;
   }

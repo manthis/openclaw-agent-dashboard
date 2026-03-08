@@ -26,7 +26,10 @@ export async function GET() {
   try {
     const output = execSync('openclaw sessions --active 5 --json 2>/dev/null || echo "[]"', { timeout: 5000 }).toString();
     const parsed = JSON.parse(output.trim());
-    sessions = Array.isArray(parsed) ? parsed.length : 0;
+    if (Array.isArray(parsed)) sessions = parsed.length;
+    else if (parsed && typeof parsed === "object" && typeof parsed.count === "number") sessions = parsed.count;
+    else if (parsed && Array.isArray(parsed.sessions)) sessions = parsed.sessions.length;
+    else sessions = 0;
   } catch {
     sessions = 0;
   }

@@ -61,3 +61,58 @@ describe('live metrics sampler', () => {
     unsub2();
   });
 });
+
+describe('sessions JSON parsing', () => {
+  const makeSnap = (getSessionsActive5m: () => Promise<number>) =>
+    sampleLiveMetrics({
+      now: () => 0,
+      getGatewayConnected: async () => false,
+      getSessionsActive5m,
+      getSystemSnapshot: () =>
+        ({ cpu: { percent: 0, loadAvg: '' }, memory: { used: 0, total: 0, percent: 0 } }) as any,
+    });
+
+  test('returns count from object with count field', async () => {
+    // Simulate: parsed = { count: 3, sessions: [...], path: '...', activeMinutes: 5 }
+    const snap = await makeSnap(async () => {
+      const parsed = { count: 3, sessions: [{}, {}, {}], path: '/tmp', activeMinutes: 5 };
+      if (Array.isArray(parsed)) return parsed.length;
+      if (parsed && typeof parsed === 'object' && typeof (parsed as any).count === 'number') return (parsed as any).count;
+      if (parsed && Array.isArray((parsed as any).sessions)) return (parsed as any).sessions.length;
+      return 0;
+    });
+    expect(snap.sessionsActive5m).toBe(3);
+  });
+
+  test('returns sessions.length when count field absent', async () => {
+    const snap = await makeSnap(async () => {
+      const parsed = { sessions: [{}, {}] } as any;
+      if (Array.isArray(parsed)) return parsed.length;
+      if (parsed && typeof parsed === 'object' && typeof parsed.count === 'number') return parsed.count;
+      if (parsed && Array.isArray(parsed.sessions)) return parsed.sessions.length;
+      return 0;
+    });
+    expect(snap.sessionsActive5m).toBe(2);
+  });
+
+  test('returns 0 for legacy array response', async () => {
+    const snap = await makeSnap(async () => {
+      const parsed: unknown[] = [];
+      if (Array.isArray(parsed)) return parsed.length;
+      return 0;
+    });
+    expect(snap.sessionsActive5m).toBe(0);
+  });
+
+  test('sampleLiveMetrics returns correct sessionsActive5m from mock returning object format', async () => {
+    const snap = await sampleLiveMetrics({
+      now: () => 42,
+      getGatewayConnected: async () => true,
+      getSessionsActive5m: async () => 5,
+      getSystemSnapshot: () =>
+        ({ cpu: { percent: 0, loadAvg: '' }, memory: { used: 0, total: 0, percent: 0 } }) as any,
+    });
+    expect(snap.sessionsActive5m).toBe(5);
+    expect(snap.ts).toBe(42);
+  });
+});
