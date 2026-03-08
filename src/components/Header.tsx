@@ -22,9 +22,9 @@ export function Header() {
   return (
     <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur-sm px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
       <div className="flex items-center gap-2 md:gap-3">
-        <span className="text-xl md:text-2xl">🏛️</span>
+        <span className="text-xl md:text-2xl">🦞</span>
         <div>
-          <h1 className="text-white font-bold text-base md:text-xl">OpenClaw <span className="hidden md:inline">Dashboard</span></h1>
+          <h1 className="text-white font-bold text-base md:text-xl">OpenClaw Dashboard</h1>
           <p className="text-slate-400 text-xs hidden md:block">Agent Network Monitor</p>
         </div>
       </div>
