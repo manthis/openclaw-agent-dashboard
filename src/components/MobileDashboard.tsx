@@ -166,7 +166,7 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
   };
 
   return (
-    <div className="w-full py-4">
+    <div className="w-full h-full flex items-center justify-center py-4">
       <svg
         viewBox={`${minX} ${minY} ${vbWidth} ${vbHeight}`}
         width="100%"
