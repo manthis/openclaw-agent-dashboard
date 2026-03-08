@@ -166,6 +166,7 @@ function AgentEditPanel({
     identity: false, model: false, tools: false, sandbox: false, heartbeat: false, subagents: false,
   });
   const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [activeFile, setActiveFile] = useState<WorkspaceFile>('SOUL');
   const [fileContents, setFileContents] = useState<FileContent>({});
   const [fileSaving, setFileSaving] = useState(false);
@@ -219,7 +220,6 @@ function AgentEditPanel({
   };
 
   const handleDelete = async () => {
-    if (!window.confirm(`Delete agent ${agent.name}? This cannot be undone.`)) return;
     setDeleting(true);
     const res = await fetch(`/api/agents/${agent.id}`, { method: 'DELETE' });
     if (res.ok) { onDeleted(agent.id); onClose(); }
@@ -246,7 +246,7 @@ function AgentEditPanel({
   const otherAgents = agents.filter((a) => a.id !== agent.id);
 
   return (
-    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={() => { setConfirmDelete(false); onClose(); }}>
       <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-3 md:mx-0' onClick={(e) => e.stopPropagation()}>
         {toast && <div className='fixed top-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50'>{toast}</div>}
         <div className='flex items-center justify-between px-3 md:px-6 py-4 border-b border-slate-700'>
@@ -257,7 +257,7 @@ function AgentEditPanel({
               <p className='text-slate-400 text-xs font-mono'>{agent.id}</p>
             </div>
           </div>
-          <button onClick={onClose} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
+          <button onClick={() => { setConfirmDelete(false); onClose(); }} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
         </div>
 
         {/* IDENTITY */}
@@ -376,11 +376,24 @@ function AgentEditPanel({
         </div>
 
         {/* DELETE */}
-        <div className='px-3 md:px-6 pb-6 pt-4 border-t border-slate-700/50'>
-          <button onClick={() => void handleDelete()} disabled={deleting} className='w-full flex items-center justify-center gap-2 bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-400 text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
-            <Trash2 className='w-4 h-4' />
-            {deleting ? 'Deleting...' : 'Delete agent'}
-          </button>
+        <div className='px-3 md:px-6 pb-6 pt-4 border-t border-slate-700/50 space-y-2'>
+          {!confirmDelete ? (
+            <button onClick={() => setConfirmDelete(true)} disabled={deleting} className='w-full flex items-center justify-center gap-2 bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-400 text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
+              <Trash2 className='w-4 h-4' />
+              {deleting ? 'Deleting...' : 'Delete agent'}
+            </button>
+          ) : (
+            <>
+              <button onClick={() => void handleDelete()} disabled={deleting} className='w-full flex items-center justify-center gap-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
+                <Trash2 className='w-4 h-4' />
+                {deleting ? 'Deleting...' : 'Confirm delete'}
+              </button>
+              <p className='text-red-400 text-xs text-center'>This action cannot be undone</p>
+              <button onClick={() => setConfirmDelete(false)} className='w-full flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
+                Cancel
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
