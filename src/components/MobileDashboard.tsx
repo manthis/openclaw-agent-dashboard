@@ -88,6 +88,7 @@ function buildLayout(agents: Agent[], relations: AgentRelation[]): NodePos[] {
 
 function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: number; onClick: () => void }) {
   const [imgError, setImgError] = useState(false);
+  const isActive = agent.status === 'active';
 
   return (
     <g
@@ -95,6 +96,29 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
       onClick={onClick}
       style={{ cursor: 'pointer' }}
     >
+      {/* Animated glow ring for active agents */}
+      {isActive && (
+        <circle
+          cx={NODE_HALF}
+          cy={NODE_HALF}
+          r={NODE_HALF + 3}
+          fill="none"
+          stroke="url(#activeGlow)"
+          strokeWidth={2}
+          strokeDasharray="20 40"
+          strokeLinecap="round"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from={`0 ${NODE_HALF} ${NODE_HALF}`}
+            to={`360 ${NODE_HALF} ${NODE_HALF}`}
+            dur="2s"
+            repeatCount="indefinite"
+          />
+        </circle>
+      )}
+
       <circle
         cx={NODE_HALF}
         cy={NODE_HALF}
@@ -173,6 +197,14 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
         preserveAspectRatio="xMidYMid meet"
         style={{ display: 'block' }}
       >
+        <defs>
+          <linearGradient id="activeGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#22c55e" stopOpacity={0} />
+            <stop offset="50%" stopColor="#22c55e" stopOpacity={1} />
+            <stop offset="100%" stopColor="#22c55e" stopOpacity={0} />
+          </linearGradient>
+        </defs>
+
         {relations.map((rel, i) => {
           const from = positions.find((p) => p.agent.id === rel.source);
           const to = positions.find((p) => p.agent.id === rel.target);
