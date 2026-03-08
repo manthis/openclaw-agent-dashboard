@@ -11,6 +11,7 @@ import { ModelMultiSelect } from './agents/ModelMultiSelect';
 import { DirectoryPickerField } from './agents/DirectoryPickerField';
 import { AgentMultiSelect } from './agents/AgentMultiSelect';
 import { Trash2 } from 'lucide-react';
+import { ActivitySparkline } from './ActivitySparkline';
 
 const WORKSPACE_FILES = ['SOUL', 'IDENTITY', 'TOOLS', 'MEMORY', 'USER', 'AGENTS', 'HEARTBEAT'] as const;
 type WorkspaceFile = typeof WORKSPACE_FILES[number];
@@ -247,17 +248,17 @@ function AgentEditPanel({
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={() => { setConfirmDelete(false); onClose(); }}>
-      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-3 md:mx-0' onClick={(e) => e.stopPropagation()}>
+      <div className='bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-3 md:mx-0' onClick={(e) => e.stopPropagation()}>
         {toast && <div className='fixed top-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50'>{toast}</div>}
-        <div className='flex items-center justify-between px-3 md:px-6 py-4 border-b border-slate-700'>
+        <div className='flex items-center justify-between px-3 md:px-6 py-4 border-b border-gray-200 dark:border-slate-700'>
           <div className='flex items-center gap-3'>
             <AgentAvatar agent={agent} />
             <div>
-              <h2 className='text-white text-lg font-semibold'>{agent.name}</h2>
-              <p className='text-slate-400 text-xs font-mono'>{agent.id}</p>
+              <h2 className='text-gray-900 dark:text-white text-lg font-semibold'>{agent.name}</h2>
+              <p className='text-gray-500 dark:text-slate-400 text-xs font-mono'>{agent.id}</p>
             </div>
           </div>
-          <button onClick={() => { setConfirmDelete(false); onClose(); }} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
+          <button onClick={() => { setConfirmDelete(false); onClose(); }} className='text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
         </div>
 
         {/* IDENTITY */}
@@ -267,7 +268,7 @@ function AgentEditPanel({
             <label className={LABEL_CLS}>Emoji</label>
             <div className='flex items-center gap-3'>
               <EmojiPickerField value={identity.emoji} onChange={(emoji) => setIdentity((p) => ({ ...p, emoji }))} />
-              <span className='text-slate-500 text-xs'>Click to open emoji picker</span>
+              <span className='text-gray-400 dark:text-slate-500 text-xs'>Click to open emoji picker</span>
             </div>
           </div>
           <div><label className={LABEL_CLS}>Theme</label><input className={INPUT_CLS} value={identity.theme} onChange={(e) => setIdentity((p) => ({ ...p, theme: e.target.value }))} /></div>
@@ -294,7 +295,7 @@ function AgentEditPanel({
               checked={modelFields.isDefault}
               onCheckedChange={(checked) => setModelFields((p) => ({ ...p, isDefault: checked }))}
             />
-            <label htmlFor='editDefault' className='text-slate-400 text-sm cursor-pointer'>Default agent</label>
+            <label htmlFor='editDefault' className='text-gray-500 dark:text-slate-400 text-sm cursor-pointer'>Default agent</label>
           </div>
         </SectionPanel>
 
@@ -362,11 +363,11 @@ function AgentEditPanel({
         </SectionPanel>
 
         {/* WORKSPACE FILES */}
-        <div className='px-3 md:px-6 pb-6 border-t border-slate-700/50 pt-4'>
-          <h3 className='text-slate-400 text-xs uppercase tracking-wider mb-3'>Workspace Files</h3>
+        <div className='px-3 md:px-6 pb-6 border-t border-gray-200 dark:border-slate-700/50 pt-4'>
+          <h3 className='text-gray-500 dark:text-slate-400 text-xs uppercase tracking-wider mb-3'>Workspace Files</h3>
           <div className='flex flex-wrap gap-1 mb-3'>
             {WORKSPACE_FILES.map((f) => (
-              <button key={f} onClick={() => setActiveFile(f)} className={`text-xs px-3 py-1 rounded font-mono transition-colors ${activeFile === f ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}>{f}.md</button>
+              <button key={f} onClick={() => setActiveFile(f)} className={`text-xs px-3 py-1 rounded font-mono transition-colors ${activeFile === f ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50' : 'bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-slate-500 hover:text-gray-700 dark:hover:text-slate-300'}`}>{f}.md</button>
             ))}
           </div>
           <textarea className='w-full h-48 bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono rounded-lg p-3 focus:outline-none focus:border-indigo-500 resize-y' value={fileContents[activeFile] ?? ''} onChange={(e) => setFileContents((prev) => ({ ...prev, [activeFile]: e.target.value }))} placeholder={`${activeFile}.md content...`} />
@@ -501,6 +502,7 @@ export function AgentsPageClient() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Agent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [activityData, setActivityData] = useState<Record<string, { date: string; count: number }[]>>({});
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -510,6 +512,19 @@ export function AgentsPageClient() {
       .then((data: Agent[]) => { setAgents(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+  // Fetch activity sparkline data for each agent
+  useEffect(() => {
+    if (agents.length === 0) return;
+    agents.forEach((agent) => {
+      fetch(`/api/agents/${agent.id}/activity`)
+        .then((r) => r.json())
+        .then((data: { date: string; count: number }[]) => {
+          setActivityData((prev) => ({ ...prev, [agent.id]: data }));
+        })
+        .catch(() => {/* ignore */});
+    });
+  }, [agents]);
+
 
   useEffect(() => { loadAgents(); }, [loadAgents]);
   // Poll agent statuses every 5 seconds
@@ -581,6 +596,9 @@ export function AgentsPageClient() {
                   <p className='text-slate-400 text-xs font-mono truncate max-w-[60%]'>{agent.model}</p>
                   <StatusBadge status={agent.status} />
                 </div>
+                {activityData[agent.id] && (
+                  <ActivitySparkline data={activityData[agent.id]} />
+                )}
               </button>
             ))}
           </div>

@@ -39,7 +39,8 @@ export function ActivitySparkline({ data }: { data: DataPoint[] }) {
               rx={0.5}
               className={isActive ? 'fill-indigo-500' : 'fill-slate-700'}
               onMouseEnter={(e) => {
-                const rect = (e.currentTarget as SVGElement).closest('svg')?.parentElement?.getBoundingClientRect();
+                const svgEl = (e.currentTarget as SVGElement).closest('svg');
+                const rect = svgEl?.parentElement?.getBoundingClientRect();
                 if (rect) {
                   setTooltip({
                     x: rect.left + (i + 0.5) * (rect.width / barCount),

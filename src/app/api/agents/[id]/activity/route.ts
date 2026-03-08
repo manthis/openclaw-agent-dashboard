@@ -15,12 +15,11 @@ export async function GET(
     const raw = fs.readFileSync(logPath, 'utf-8');
     allData = JSON.parse(raw) as Record<string, Record<string, number>>;
   } catch {
-    // file doesn't exist or invalid JSON — return zeros
+    // file does not exist or invalid JSON
   }
 
   const agentData = allData[id] ?? {};
 
-  // Build last 7 days
   const result: { date: string; count: number }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
