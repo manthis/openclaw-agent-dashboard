@@ -1,6 +1,6 @@
 'use client';
 import dynamic from 'next/dynamic';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import type { Agent, AgentRelation } from '@/types/agent';
 import { StatusBadge } from './StatusBadge';
@@ -68,8 +68,10 @@ interface DashboardClientProps {
   relations: AgentRelation[];
 }
 
-export function DashboardClient({ agents, relations }: DashboardClientProps) {
+export function DashboardClient({ agents: initialAgents, relations }: DashboardClientProps) {
   const [isMobile, setIsMobile] = useState(false);
+  const [agents, setAgents] = useState<Agent[]>(initialAgents);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 767px)');
@@ -77,6 +79,27 @@ export function DashboardClient({ agents, relations }: DashboardClientProps) {
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Poll agent statuses every 5 seconds
+  useEffect(() => {
+    const fetchStatuses = () => {
+      fetch('/api/agents/status')
+        .then((r) => r.json())
+        .then((statuses: Record<string, 'active' | 'idle'>) => {
+          setAgents((prev) =>
+            prev.map((a) =>
+              statuses[a.id] !== undefined ? { ...a, status: statuses[a.id] } : a
+            )
+          );
+        })
+        .catch(() => {/* ignore */});
+    };
+    fetchStatuses();
+    intervalRef.current = setInterval(fetchStatuses, 5000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
   }, []);
 
   if (isMobile) {

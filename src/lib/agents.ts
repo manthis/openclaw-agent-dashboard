@@ -1,5 +1,6 @@
 import { readOpenClawConfig, fileExists } from './config';
 import fs from 'fs';
+import { execFileSync } from 'child_process';
 import * as path from 'path';
 import type { Agent, AgentRelation, AgentsGraph, ToolsProfile, SandboxMode, HeartbeatTarget } from '@/types/agent';
 
@@ -204,6 +205,22 @@ export function getAgentsGraph(): AgentsGraph {
 export function getAgentsStatus(): Record<string, 'active' | 'idle'> {
   const result: Record<string, 'active' | 'idle'> = {};
   getAgents().forEach((a) => { result[a.id] = 'idle'; });
+  try {
+    const output = execFileSync('openclaw', ['sessions', '--active', '5', '--all-agents', '--json'], {
+      timeout: 5000,
+      encoding: 'utf-8',
+    });
+    const data = JSON.parse(output) as { sessions?: Array<{ agentId: string; ageMs: number }> };
+    if (data.sessions) {
+      data.sessions.forEach((s) => {
+        if (s.ageMs < 120000) {
+          result[s.agentId] = 'active';
+        }
+      });
+    }
+  } catch {
+    // Fallback to idle if CLI unavailable
+  }
   return result;
 }
 

@@ -512,6 +512,25 @@ export function AgentsPageClient() {
   }, []);
 
   useEffect(() => { loadAgents(); }, [loadAgents]);
+  // Poll agent statuses every 5 seconds
+  useEffect(() => {
+    const fetchStatuses = () => {
+      fetch('/api/agents/status')
+        .then((r) => r.json())
+        .then((statuses: Record<string, 'active' | 'idle'>) => {
+          setAgents((prev) =>
+            prev.map((a) =>
+              statuses[a.id] !== undefined ? { ...a, status: statuses[a.id] } : a
+            )
+          );
+        })
+        .catch(() => {/* ignore */});
+    };
+    fetchStatuses();
+    const id = setInterval(fetchStatuses, 5000);
+    return () => clearInterval(id);
+  }, []);
+
 
   // Auto-open agent panel when ?open=<agentId> is present
   useEffect(() => {
