@@ -4,6 +4,15 @@ import { execSync } from 'child_process';
 
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789';
 
+type SessionsJson =
+  | unknown[]
+  | {
+      sessions?: unknown[];
+      count?: number;
+      activeMinutes?: number;
+      path?: string;
+    };
+
 export async function GET() {
   // “Connected” should reflect that the OpenClaw gateway is not only reachable,
   // but that the RPC probe succeeds (i.e. WS handshake + auth works).
@@ -23,9 +32,18 @@ export async function GET() {
 
   let sessions = 0;
   try {
-    const output = execSync('openclaw sessions --active 5 --json 2>/dev/null || echo "[]"', { timeout: 5000 }).toString();
-    const parsed = JSON.parse(output.trim());
-    sessions = Array.isArray(parsed) ? parsed.length : 0;
+    const output = execSync('openclaw sessions --active 5 --json 2>/dev/null || echo "{}"', { timeout: 5000 }).toString();
+    const parsed = JSON.parse(output.trim()) as SessionsJson;
+
+    if (Array.isArray(parsed)) {
+      sessions = parsed.length;
+    } else if (parsed && typeof parsed === 'object') {
+      const s = Array.isArray((parsed as any).sessions) ? ((parsed as any).sessions as unknown[]) : null;
+      const c = typeof (parsed as any).count === 'number' ? (parsed as any).count : null;
+      sessions = s ? s.length : c ?? 0;
+    } else {
+      sessions = 0;
+    }
   } catch {
     sessions = 0;
   }
