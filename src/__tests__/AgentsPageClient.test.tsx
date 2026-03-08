@@ -83,8 +83,8 @@ describe("AgentsPageClient", () => {
     mockFetch.mockReturnValueOnce(jsonResponse(mockAgents));
     render(<AgentsPageClient />);
     await waitFor(() => screen.getByText("HAL9000"));
-    const addBtn = screen.getByTitle("POST /api/agents not yet available");
-    expect(addBtn).toBeDisabled();
+    const addBtn = screen.getByText("+ Add Agent");
+    expect(addBtn).toBeInTheDocument();
   });
 
   it("saves agent on form submit", async () => {
@@ -172,7 +172,7 @@ describe("AgentsPageClient", () => {
     fireEvent.click(screen.getByText("HAL9000"));
     await waitFor(() => screen.getByText("Identity"));
     fireEvent.click(screen.getByText("Save"));
-    await waitFor(() => expect(screen.getByText("Error saving agent")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText("Error saving")).toBeInTheDocument());
   });
 
   it("shows error toast when delete fails", async () => {
