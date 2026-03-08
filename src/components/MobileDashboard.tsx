@@ -313,6 +313,8 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
               y2={to.y - NODE_HALF}
               stroke="#6366f1"
               strokeWidth={1.5}
+              strokeDasharray="6 5"
+              opacity={0.7}
             />
           );
         })}
