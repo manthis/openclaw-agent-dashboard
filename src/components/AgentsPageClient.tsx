@@ -501,14 +501,14 @@ export function AgentsPageClient() {
   const handleDeleted = (id: string) => setAgents((prev) => prev.filter((a) => a.id !== id));
 
   return (
-    <main className='flex-1 overflow-auto bg-slate-950 p-6'>
+    <main className='flex-1 overflow-auto bg-slate-950 p-3 md:p-6'>
       <div className='max-w-6xl mx-auto'>
-        <div className='flex items-center justify-between mb-6'>
+        <div className='flex items-center justify-between mb-4 md:mb-6'>
           <div>
-            <h1 className='text-white text-2xl font-bold'>Agents</h1>
-            <p className='text-slate-400 text-sm mt-1'>{agents.length} agent{agents.length !== 1 ? 's' : ''} configured</p>
+            <h1 className='text-white text-xl md:text-2xl font-bold'>Agents</h1>
+            <p className='text-slate-400 text-xs md:text-sm mt-1'>{agents.length} agent{agents.length !== 1 ? 's' : ''} configured</p>
           </div>
-          <button onClick={() => setShowAdd(true)} className='bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors'>+ Add Agent</button>
+          <button onClick={() => setShowAdd(true)} className='bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-3 md:px-4 py-2.5 md:py-2 rounded-lg transition-colors min-h-[44px]'>+ Add Agent</button>
         </div>
         {loading ? (
           <div className='text-slate-500 text-sm'>Loading agents...</div>
