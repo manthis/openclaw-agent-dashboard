@@ -18,6 +18,14 @@ const CreateAgentSchema = z.object({
   workspace: z.string().min(1).max(512),
   theme: z.string().max(256).optional().default(''),
   avatar: z.string().max(512).optional().default(''),
+  toolsProfile: z.enum(['minimal', 'coding', 'messaging', 'full']).optional(),
+  skills: z.array(z.string().max(128)).optional(),
+  sandboxMode: z.enum(['off', 'all', 'tools']).optional(),
+  heartbeatEvery: z.string().max(32).optional(),
+  heartbeatModel: z.string().max(256).optional(),
+  allowAgents: z.array(z.string().max(128)).optional(),
+  modelFallbacks: z.array(z.string().max(256)).optional(),
+  isDefault: z.boolean().optional(),
 });
 
 export async function POST(request: Request) {

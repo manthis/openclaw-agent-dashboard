@@ -7,6 +7,10 @@ import { StatusBadge } from './StatusBadge';
 const WORKSPACE_FILES = ['SOUL', 'IDENTITY', 'TOOLS', 'MEMORY', 'USER', 'AGENTS', 'HEARTBEAT'] as const;
 type WorkspaceFile = typeof WORKSPACE_FILES[number];
 
+const INPUT_CLS = 'w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500';
+const SELECT_CLS = INPUT_CLS;
+const LABEL_CLS = 'text-slate-500 text-xs block mb-1';
+
 function AgentAvatar({ agent }: { agent: Agent }) {
   const [err, setErr] = useState(false);
   if (agent.avatar && !err) {
@@ -28,6 +32,93 @@ function AgentAvatar({ agent }: { agent: Agent }) {
 
 type FileContent = Partial<Record<WorkspaceFile, string>>;
 
+function csvToArr(v: string): string[] {
+  return v.split(',').map((s) => s.trim()).filter(Boolean);
+}
+
+function arrToCsv(a?: string[]): string {
+  return a?.join(', ') ?? '';
+}
+
+/* ── Advanced Settings shared fields ── */
+interface AdvancedFields {
+  toolsProfile: string;
+  skills: string;
+  sandboxMode: string;
+  heartbeatEvery: string;
+  heartbeatModel: string;
+  allowAgents: string;
+  modelFallbacks: string;
+  isDefault: boolean;
+}
+
+function AdvancedSettingsSection({ adv, setAdv }: { adv: AdvancedFields; setAdv: (fn: (prev: AdvancedFields) => AdvancedFields) => void }) {
+  return (
+    <div className="space-y-3">
+      <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-2">Advanced Settings</h3>
+      <div>
+        <label className={LABEL_CLS}>Tools Profile</label>
+        <select className={SELECT_CLS} value={adv.toolsProfile} onChange={(e) => setAdv((p) => ({ ...p, toolsProfile: e.target.value }))}>
+          <option value="">— none —</option>
+          <option value="minimal">minimal</option>
+          <option value="coding">coding</option>
+          <option value="messaging">messaging</option>
+          <option value="full">full</option>
+        </select>
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Skills (comma-separated)</label>
+        <textarea className={INPUT_CLS + ' h-16 resize-y'} value={adv.skills} onChange={(e) => setAdv((p) => ({ ...p, skills: e.target.value }))} placeholder="skill1, skill2" />
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Sandbox Mode</label>
+        <select className={SELECT_CLS} value={adv.sandboxMode} onChange={(e) => setAdv((p) => ({ ...p, sandboxMode: e.target.value }))}>
+          <option value="">— none —</option>
+          <option value="off">off</option>
+          <option value="all">all</option>
+          <option value="tools">tools</option>
+        </select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className={LABEL_CLS}>Heartbeat Every</label>
+          <input className={INPUT_CLS} value={adv.heartbeatEvery} onChange={(e) => setAdv((p) => ({ ...p, heartbeatEvery: e.target.value }))} placeholder="e.g. 30s" />
+        </div>
+        <div>
+          <label className={LABEL_CLS}>Heartbeat Model</label>
+          <input className={INPUT_CLS} value={adv.heartbeatModel} onChange={(e) => setAdv((p) => ({ ...p, heartbeatModel: e.target.value }))} placeholder="optional model" />
+        </div>
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Allow Agents (comma-separated)</label>
+        <textarea className={INPUT_CLS + ' h-16 resize-y'} value={adv.allowAgents} onChange={(e) => setAdv((p) => ({ ...p, allowAgents: e.target.value }))} placeholder="agent1, agent2" />
+      </div>
+      <div>
+        <label className={LABEL_CLS}>Model Fallbacks (comma-separated)</label>
+        <textarea className={INPUT_CLS + ' h-16 resize-y'} value={adv.modelFallbacks} onChange={(e) => setAdv((p) => ({ ...p, modelFallbacks: e.target.value }))} placeholder="model1, model2" />
+      </div>
+      <div className="flex items-center gap-2">
+        <input type="checkbox" id="isDefault" checked={adv.isDefault} onChange={(e) => setAdv((p) => ({ ...p, isDefault: e.target.checked }))} className="accent-indigo-500" />
+        <label htmlFor="isDefault" className="text-slate-400 text-sm">Default agent</label>
+      </div>
+    </div>
+  );
+}
+
+function buildAdvancedBody(adv: AdvancedFields): Record<string, unknown> {
+  const body: Record<string, unknown> = {};
+  if (adv.toolsProfile) body.toolsProfile = adv.toolsProfile;
+  if (adv.skills.trim()) body.skills = csvToArr(adv.skills);
+  if (adv.sandboxMode) body.sandboxMode = adv.sandboxMode;
+  if (adv.heartbeatEvery.trim()) body.heartbeatEvery = adv.heartbeatEvery.trim();
+  if (adv.heartbeatModel.trim()) body.heartbeatModel = adv.heartbeatModel.trim();
+  if (adv.allowAgents.trim()) body.allowAgents = csvToArr(adv.allowAgents);
+  if (adv.modelFallbacks.trim()) body.modelFallbacks = csvToArr(adv.modelFallbacks);
+  body.isDefault = adv.isDefault;
+  return body;
+}
+
+/* ── Edit Panel ── */
 function AgentEditPanel({
   agent,
   onClose,
@@ -46,12 +137,23 @@ function AgentEditPanel({
     theme: agent.theme ?? '',
     workspace: agent.workspace ?? '',
   });
+  const [adv, setAdv] = useState<AdvancedFields>({
+    toolsProfile: agent.toolsProfile ?? '',
+    skills: arrToCsv(agent.skills),
+    sandboxMode: agent.sandboxMode ?? '',
+    heartbeatEvery: agent.heartbeat?.every ?? '',
+    heartbeatModel: agent.heartbeat?.model ?? '',
+    allowAgents: arrToCsv(agent.allowAgents),
+    modelFallbacks: arrToCsv(agent.modelFallbacks),
+    isDefault: agent.isDefault ?? false,
+  });
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [activeFile, setActiveFile] = useState<WorkspaceFile>('SOUL');
   const [fileContents, setFileContents] = useState<FileContent>({});
   const [fileSaving, setFileSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -71,10 +173,11 @@ function AgentEditPanel({
 
   const handleSave = async () => {
     setSaving(true);
+    const body = { ...form, ...buildAdvancedBody(adv) };
     const res = await fetch(`/api/agents/${agent.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
+      body: JSON.stringify(body),
     });
     if (res.ok) {
       const updated = await res.json() as Agent;
@@ -136,15 +239,33 @@ function AgentEditPanel({
           <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-2">Identity</h3>
           {([['name', 'Name'], ['emoji', 'Emoji'], ['model', 'Model'], ['theme', 'Theme'], ['workspace', 'Workspace']] as const).map(([key, label]) => (
             <div key={key}>
-              <label className="text-slate-500 text-xs block mb-1">{label}</label>
+              <label className={LABEL_CLS}>{label}</label>
               <input
-                className="w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500"
+                className={INPUT_CLS}
                 value={form[key]}
                 onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
               />
             </div>
           ))}
-          <div className="flex gap-2 pt-2">
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-700/50">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="text-slate-400 text-xs uppercase tracking-wider hover:text-slate-200 transition-colors"
+          >
+            {showAdvanced ? '▾' : '▸'} Advanced Settings
+          </button>
+          {showAdvanced && (
+            <div className="mt-3">
+              <AdvancedSettingsSection adv={adv} setAdv={setAdv} />
+            </div>
+          )}
+        </div>
+
+        <div className="px-6 py-4 border-t border-slate-700/50">
+          <div className="flex gap-2">
             <button
               onClick={() => void handleSave()}
               disabled={saving}
@@ -198,17 +319,119 @@ function AgentEditPanel({
   );
 }
 
+/* ── Add Agent Modal ── */
+function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
+  const [form, setForm] = useState({ id: '', name: '', emoji: '', model: '', workspace: '' });
+  const [adv, setAdv] = useState<AdvancedFields>({
+    toolsProfile: '', skills: '', sandboxMode: '',
+    heartbeatEvery: '', heartbeatModel: '',
+    allowAgents: '', modelFallbacks: '', isDefault: false,
+  });
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const canSubmit = form.id.trim() !== '' && form.name.trim() !== '';
+
+  const handleCreate = async () => {
+    setSaving(true);
+    setError(null);
+    const body = {
+      ...form,
+      emoji: form.emoji || '🤖',
+      model: form.model || 'unknown',
+      workspace: form.workspace || '/tmp',
+      ...buildAdvancedBody(adv),
+    };
+    const res = await fetch('/api/agents', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      onCreated();
+      onClose();
+    } else {
+      const data = await res.json().catch(() => ({})) as { error?: string };
+      setError(typeof data.error === 'string' ? data.error : 'Failed to create agent');
+    }
+    setSaving(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
+      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+          <h2 className="text-white text-lg font-semibold">Add Agent</h2>
+          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-2xl leading-none" aria-label="Close">&times;</button>
+        </div>
+        <div className="px-6 py-4 space-y-3">
+          {error && <div className="text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">{error}</div>}
+          <div>
+            <label className={LABEL_CLS}>ID (required)</label>
+            <input className={INPUT_CLS} value={form.id} onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))} placeholder="my-agent" />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Name (required)</label>
+            <input className={INPUT_CLS} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="My Agent" />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Emoji</label>
+            <input className={INPUT_CLS} value={form.emoji} onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))} placeholder="🤖" />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Model</label>
+            <input className={INPUT_CLS} value={form.model} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))} placeholder="claude-sonnet-4-20250514" />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Workspace</label>
+            <input className={INPUT_CLS} value={form.workspace} onChange={(e) => setForm((f) => ({ ...f, workspace: e.target.value }))} placeholder="/path/to/workspace" />
+          </div>
+
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((v) => !v)}
+              className="text-slate-400 text-xs uppercase tracking-wider hover:text-slate-200 transition-colors"
+            >
+              {showAdvanced ? '▾' : '▸'} Advanced Settings
+            </button>
+            {showAdvanced && (
+              <div className="mt-3">
+                <AdvancedSettingsSection adv={adv} setAdv={setAdv} />
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="px-6 py-4 border-t border-slate-700">
+          <button
+            onClick={() => void handleCreate()}
+            disabled={saving || !canSubmit}
+            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+          >
+            {saving ? 'Creating...' : 'Create Agent'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main Page ── */
 export function AgentsPageClient() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Agent | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
 
-  useEffect(() => {
+  const loadAgents = useCallback(() => {
     void fetch('/api/agents')
       .then((r) => r.json())
       .then((data: Agent[]) => { setAgents(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
+
+  useEffect(() => { loadAgents(); }, [loadAgents]);
 
   const handleUpdated = (updated: Agent) => {
     setAgents((prev) => prev.map((a) => a.id === updated.id ? updated : a));
@@ -228,11 +451,10 @@ export function AgentsPageClient() {
             <p className="text-slate-400 text-sm mt-1">{agents.length} agent{agents.length !== 1 ? 's' : ''} configured</p>
           </div>
           <button
-            disabled
-            title="POST /api/agents not yet available"
-            className="bg-slate-800 text-slate-500 text-sm font-medium px-4 py-2 rounded-lg cursor-not-allowed border border-slate-700"
+            onClick={() => setShowAdd(true)}
+            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
           >
-            + Add Agent <span className="text-xs">(coming soon)</span>
+            + Add Agent
           </button>
         </div>
 
@@ -271,6 +493,13 @@ export function AgentsPageClient() {
           onClose={() => setSelected(null)}
           onUpdated={handleUpdated}
           onDeleted={handleDeleted}
+        />
+      )}
+
+      {showAdd && (
+        <AddAgentModal
+          onClose={() => setShowAdd(false)}
+          onCreated={loadAgents}
         />
       )}
     </main>

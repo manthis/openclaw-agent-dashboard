@@ -1,7 +1,7 @@
 import { readOpenClawConfig, fileExists } from './config';
 import fs from 'fs';
 import * as path from 'path';
-import type { Agent, AgentRelation, AgentsGraph } from '@/types/agent';
+import type { Agent, AgentRelation, AgentsGraph, ToolsProfile, SandboxMode } from '@/types/agent';
 
 export const STATIC_RELATIONS: AgentRelation[] = [
   { source: 'hal9000', target: 'mother', label: 'delegates' },
@@ -16,13 +16,19 @@ export const STATIC_RELATIONS: AgentRelation[] = [
 interface RawAgent {
   id: string;
   workspace?: string;
-  model?: { primary?: string };
+  model?: { primary?: string; fallbacks?: string[] };
   identity: {
     name: string;
     emoji: string;
     theme?: string;
     avatar?: string;
   };
+  tools?: { profile?: string };
+  skills?: string[];
+  sandbox?: { mode?: string };
+  heartbeat?: { every?: string; model?: string };
+  subagents?: { allowAgents?: string[] };
+  default?: boolean;
 }
 
 const OPENCLAW_CONFIG = path.join(process.env.HOME ?? '/Users/manthis', '.openclaw', 'openclaw.json');
@@ -37,7 +43,7 @@ function writeRawConfig(config: unknown): void {
 
 function buildAgent(raw: RawAgent): Agent {
   const ws = raw.workspace ?? '';
-  return {
+  const agent: Agent = {
     id: raw.id,
     name: raw.identity.name,
     emoji: raw.identity.emoji,
@@ -59,6 +65,14 @@ function buildAgent(raw: RawAgent): Agent {
       .filter((r) => r.source === raw.id)
       .map((r) => r.target),
   };
+  if (raw.tools?.profile) agent.toolsProfile = raw.tools.profile as ToolsProfile;
+  if (raw.skills) agent.skills = raw.skills;
+  if (raw.sandbox?.mode) agent.sandboxMode = raw.sandbox.mode as SandboxMode;
+  if (raw.heartbeat?.every) agent.heartbeat = { every: raw.heartbeat.every, model: raw.heartbeat.model };
+  if (raw.subagents?.allowAgents) agent.allowAgents = raw.subagents.allowAgents;
+  if (raw.model?.fallbacks) agent.modelFallbacks = raw.model.fallbacks;
+  if (raw.default !== undefined) agent.isDefault = raw.default;
+  return agent;
 }
 
 export function getAgents(): Agent[] {
@@ -73,7 +87,12 @@ export function getAgent(id: string): Agent | null {
   return getAgents().find((a) => a.id === id) ?? null;
 }
 
-export function updateAgent(id: string, patch: Partial<{ name: string; emoji: string; theme: string; avatar: string; model: string; workspace: string }>): Agent | null {
+export function updateAgent(id: string, patch: Partial<{
+  name: string; emoji: string; theme: string; avatar: string; model: string; workspace: string;
+  toolsProfile: string; skills: string[]; sandboxMode: string;
+  heartbeatEvery: string; heartbeatModel: string;
+  allowAgents: string[]; modelFallbacks: string[]; isDefault: boolean;
+}>): Agent | null {
   const config = readRawConfig();
   const list = config.agents?.list;
   if (!list) return null;
@@ -86,6 +105,14 @@ export function updateAgent(id: string, patch: Partial<{ name: string; emoji: st
   if (patch.avatar !== undefined) raw.identity.avatar = patch.avatar;
   if (patch.model !== undefined) raw.model = { ...(raw.model ?? {}), primary: patch.model };
   if (patch.workspace !== undefined) raw.workspace = patch.workspace;
+  if (patch.toolsProfile !== undefined) { raw.tools = { ...(raw.tools ?? {}), profile: patch.toolsProfile }; }
+  if (patch.skills !== undefined) raw.skills = patch.skills;
+  if (patch.sandboxMode !== undefined) { raw.sandbox = { ...(raw.sandbox ?? {}), mode: patch.sandboxMode }; }
+  if (patch.heartbeatEvery !== undefined) { raw.heartbeat = { ...(raw.heartbeat ?? {}), every: patch.heartbeatEvery }; }
+  if (patch.heartbeatModel !== undefined) { raw.heartbeat = { ...(raw.heartbeat ?? {}), model: patch.heartbeatModel }; }
+  if (patch.allowAgents !== undefined) { raw.subagents = { ...(raw.subagents ?? {}), allowAgents: patch.allowAgents }; }
+  if (patch.modelFallbacks !== undefined) { raw.model = { ...(raw.model ?? {}), fallbacks: patch.modelFallbacks }; }
+  if (patch.isDefault !== undefined) raw.default = patch.isDefault;
   writeRawConfig(config);
   return buildAgent(raw);
 }
@@ -117,8 +144,16 @@ export function createAgent(data: {
   emoji: string;
   model: string;
   workspace: string;
-  theme: string;
-  avatar: string;
+  theme?: string;
+  avatar?: string;
+  toolsProfile?: string;
+  skills?: string[];
+  sandboxMode?: string;
+  heartbeatEvery?: string;
+  heartbeatModel?: string;
+  allowAgents?: string[];
+  modelFallbacks?: string[];
+  isDefault?: boolean;
 }): void {
   const config = readRawConfig();
   if (!config.agents) config.agents = { list: [] };
@@ -126,14 +161,20 @@ export function createAgent(data: {
   const newRaw: RawAgent = {
     id: data.id,
     workspace: data.workspace,
-    model: { primary: data.model },
+    model: { primary: data.model, ...(data.modelFallbacks?.length ? { fallbacks: data.modelFallbacks } : {}) },
     identity: {
       name: data.name,
       emoji: data.emoji,
-      theme: data.theme,
+      theme: data.theme ?? '',
       avatar: data.avatar || undefined,
     },
   };
+  if (data.toolsProfile) newRaw.tools = { profile: data.toolsProfile };
+  if (data.skills?.length) newRaw.skills = data.skills;
+  if (data.sandboxMode) newRaw.sandbox = { mode: data.sandboxMode };
+  if (data.heartbeatEvery) newRaw.heartbeat = { every: data.heartbeatEvery, model: data.heartbeatModel };
+  if (data.allowAgents?.length) newRaw.subagents = { allowAgents: data.allowAgents };
+  if (data.isDefault !== undefined) newRaw.default = data.isDefault;
   (config.agents.list as RawAgent[]).push(newRaw);
   writeRawConfig(config);
 }

@@ -1,4 +1,6 @@
 export type AgentStatus = 'active' | 'idle';
+export type ToolsProfile = 'minimal' | 'coding' | 'messaging' | 'full';
+export type SandboxMode = 'off' | 'all' | 'tools';
 
 export interface Agent {
   id: string;
@@ -19,6 +21,13 @@ export interface Agent {
     heartbeat: boolean;
   };
   relations: string[];
+  toolsProfile?: ToolsProfile;
+  skills?: string[];
+  sandboxMode?: SandboxMode;
+  heartbeat?: { every: string; model?: string };
+  allowAgents?: string[];
+  modelFallbacks?: string[];
+  isDefault?: boolean;
 }
 
 export interface AgentRelation {
