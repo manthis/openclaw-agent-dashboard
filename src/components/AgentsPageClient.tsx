@@ -15,9 +15,9 @@ import { Trash2 } from 'lucide-react';
 const WORKSPACE_FILES = ['SOUL', 'IDENTITY', 'TOOLS', 'MEMORY', 'USER', 'AGENTS', 'HEARTBEAT'] as const;
 type WorkspaceFile = typeof WORKSPACE_FILES[number];
 
-const INPUT_CLS = 'w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500';
+const INPUT_CLS = 'w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500';
 const SELECT_CLS = INPUT_CLS;
-const LABEL_CLS = 'text-slate-500 text-xs block mb-1';
+const LABEL_CLS = 'text-gray-500 dark:text-slate-500 text-xs block mb-1';
 
 function AgentAvatar({ agent }: { agent: Agent }) {
   const [err, setErr] = useState(false);

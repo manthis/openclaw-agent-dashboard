@@ -151,7 +151,7 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
   const positions = buildLayout(agents, relations);
 
   if (positions.length === 0) {
-    return <div className="text-center text-slate-500 py-12">No agents found</div>;
+    return <div className="text-center text-gray-500 dark:text-slate-500 py-12">No agents found</div>;
   }
 
   const minX = Math.min(...positions.map((p) => p.x)) - NODE_HALF - PADDING;

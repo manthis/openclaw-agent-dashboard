@@ -12,7 +12,7 @@ const AgentGraph = dynamic(
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-full">
-        <div className="text-slate-500 animate-pulse">Loading agent graph...</div>
+        <div className="text-gray-500 dark:text-slate-500 animate-pulse">Loading agent graph...</div>
       </div>
     ),
   }
@@ -21,10 +21,10 @@ const AgentGraph = dynamic(
 function AgentMobileCard({ agent }: { agent: Agent }) {
   const [imgError, setImgError] = useState(false);
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl p-4 flex items-start gap-3">
+    <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl p-4 flex items-start gap-3 shadow-sm">
       <div className="flex-shrink-0">
         {agent.avatar && !imgError ? (
-          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-700">
+          <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 dark:border-slate-700">
             <Image
               src={`/api/agents/${agent.id}/avatar`}
               alt={agent.name}
@@ -40,11 +40,11 @@ function AgentMobileCard({ agent }: { agent: Agent }) {
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <h3 className="text-white font-semibold text-sm truncate">{agent.name}</h3>
+          <h3 className="text-gray-900 dark:text-white font-semibold text-sm truncate">{agent.name}</h3>
           <StatusBadge status={agent.status} />
         </div>
-        <p className="text-slate-500 text-xs font-mono truncate">{agent.id}</p>
-        {agent.model && <p className="text-slate-400 text-xs mt-1 truncate">{agent.model}</p>}
+        <p className="text-gray-400 dark:text-slate-500 text-xs font-mono truncate">{agent.id}</p>
+        {agent.model && <p className="text-gray-600 dark:text-slate-400 text-xs mt-1 truncate">{agent.model}</p>}
       </div>
     </div>
   );
@@ -53,9 +53,9 @@ function AgentMobileCard({ agent }: { agent: Agent }) {
 function AgentMobileList({ agents }: { agents: Agent[] }) {
   return (
     <div className="p-4 space-y-3">
-      <h2 className="text-slate-400 text-xs uppercase font-semibold tracking-wider mb-3">Agents ({agents.length})</h2>
+      <h2 className="text-gray-400 dark:text-slate-400 text-xs uppercase font-semibold tracking-wider mb-3">Agents ({agents.length})</h2>
       {agents.length === 0 ? (
-        <div className="text-center text-slate-500 py-12">No agents found</div>
+        <div className="text-center text-gray-500 dark:text-slate-500 py-12">No agents found</div>
       ) : (
         agents.map((agent) => <AgentMobileCard key={agent.id} agent={agent} />)
       )}
@@ -81,7 +81,6 @@ export function DashboardClient({ agents: initialAgents, relations }: DashboardC
     return () => mq.removeEventListener('change', handler);
   }, []);
 
-  // Poll agent statuses every 5 seconds
   useEffect(() => {
     const fetchStatuses = () => {
       fetch('/api/agents/status')
@@ -93,7 +92,7 @@ export function DashboardClient({ agents: initialAgents, relations }: DashboardC
             )
           );
         })
-        .catch(() => {/* ignore */});
+        .catch(() => {});
     };
     fetchStatuses();
     intervalRef.current = setInterval(fetchStatuses, 5000);
