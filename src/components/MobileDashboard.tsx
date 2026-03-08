@@ -96,53 +96,6 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
       onClick={onClick}
       style={{ cursor: 'pointer' }}
     >
-      {/* Animated glow ring for active agents */}
-      {isActive && (
-        <g>
-          {/* Blurred glow layer */}
-          <circle
-            cx={NODE_HALF}
-            cy={NODE_HALF}
-            r={NODE_HALF + 8}
-            fill="none"
-            stroke="#00ff88"
-            strokeWidth={3}
-            strokeDasharray="22 18"
-            strokeLinecap="round"
-            filter="url(#neonBlur)"
-          >
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              from={`0 ${NODE_HALF} ${NODE_HALF}`}
-              to={`360 ${NODE_HALF} ${NODE_HALF}`}
-              dur="1.2s"
-              repeatCount="indefinite"
-            />
-          </circle>
-          {/* Sharp ring on top */}
-          <circle
-            cx={NODE_HALF}
-            cy={NODE_HALF}
-            r={NODE_HALF + 8}
-            fill="none"
-            stroke="#00ff88"
-            strokeWidth={1.8}
-            strokeDasharray="22 18"
-            strokeLinecap="round"
-          >
-            <animateTransform
-              attributeName="transform"
-              type="rotate"
-              from={`0 ${NODE_HALF} ${NODE_HALF}`}
-              to={`360 ${NODE_HALF} ${NODE_HALF}`}
-              dur="1.2s"
-              repeatCount="indefinite"
-            />
-          </circle>
-        </g>
-      )}
-
       <circle
         cx={NODE_HALF}
         cy={NODE_HALF}
@@ -185,6 +138,50 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
       >
         {agent.name}
       </text>
+      {/* Neon ring — rendered AFTER avatar so it appears on top (z-order fix) */}
+      {isActive && (
+        <g>
+          <circle
+            cx={NODE_HALF}
+            cy={NODE_HALF}
+            r={NODE_HALF + 8}
+            fill="none"
+            stroke="#00ff88"
+            strokeWidth={3}
+            strokeDasharray="22 18"
+            strokeLinecap="round"
+            filter="url(#neonBlur)"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from={`0 ${NODE_HALF} ${NODE_HALF}`}
+              to={`360 ${NODE_HALF} ${NODE_HALF}`}
+              dur="1.2s"
+              repeatCount="indefinite"
+            />
+          </circle>
+          <circle
+            cx={NODE_HALF}
+            cy={NODE_HALF}
+            r={NODE_HALF + 8}
+            fill="none"
+            stroke="#00ff88"
+            strokeWidth={1.8}
+            strokeDasharray="22 18"
+            strokeLinecap="round"
+          >
+            <animateTransform
+              attributeName="transform"
+              type="rotate"
+              from={`0 ${NODE_HALF} ${NODE_HALF}`}
+              to={`360 ${NODE_HALF} ${NODE_HALF}`}
+              dur="1.2s"
+              repeatCount="indefinite"
+            />
+          </circle>
+        </g>
+      )}
     </g>
   );
 }
@@ -290,7 +287,6 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
               y2={to.y - NODE_HALF}
               stroke="#6366f1"
               strokeWidth={1.5}
-              strokeDasharray="6 5"
               opacity={0.7}
             />
           );

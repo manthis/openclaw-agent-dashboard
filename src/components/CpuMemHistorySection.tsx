@@ -159,7 +159,7 @@ export function CpuMemHistorySection() {
   const last = points.length ? points[points.length - 1] : null;
 
   const svgW = 900;
-  const svgH = 160;
+  const svgH = 230;
   const PAD_LEFT = 38; // space for y-axis labels
   const chartW = svgW - PAD_LEFT;
 
@@ -254,7 +254,7 @@ export function CpuMemHistorySection() {
           <svg
             viewBox={`0 0 ${svgW} ${svgH + 24}`}
             className="w-full text-slate-700 dark:text-slate-300"
-            style={{ height: 180 }}
+            style={{ height: 260 }}
           >
             {/* Y grid + labels */}
             {[0, 25, 50, 75, 100].map((v) => {

@@ -1,111 +1,63 @@
-# 🏛️ OpenClaw Agent Dashboard
+# 🦅 OpenClaw Agent Dashboard
 
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com)
-[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)](https://github.com)
-[![Security](https://img.shields.io/badge/security-A-brightgreen)](https://github.com)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black?logo=next.js)](https://nextjs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript)](https://www.typescriptlang.org)
-[![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8?logo=tailwindcss)](https://tailwindcss.com)
-[![ReactFlow](https://img.shields.io/badge/ReactFlow-11-ff0072)](https://reactflow.dev)
-[![emoji-mart](https://img.shields.io/badge/emoji--mart-5-yellow)](https://github.com/missive/emoji-mart)
-[![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
+![Build](https://img.shields.io/badge/build-passing-brightgreen) ![Coverage](https://img.shields.io/badge/coverage-80%25-green) ![Next.js](https://img.shields.io/badge/Next.js-15-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
 
-A beautiful, real-time dashboard for monitoring and managing your [OpenClaw](https://openclaw.dev) agent network. Visualize agent relationships as an interactive graph, inspect and edit agent configurations, manage global config, and control your entire agent system — all in a sleek dark-themed UI.
+A real-time monitoring and management dashboard for [OpenClaw](https://github.com/anthropics/openclaw) agents. View live system metrics, inspect agent status, manage configuration, and visualize the agent topology — all in one place.
 
 ---
 
 ## ✨ Features
 
-- 🔮 **Interactive Agent Graph** — ReactFlow visualization of all agents and their relationships, with zoom/pan and generous node spacing for clarity
-- 🌐 **Gateway Status Indicator** — Live "Gateway: Connected / Disconnected" badge in the header, polling the OpenClaw gateway in real time
-- 🗂️ **Sidebar Navigation** — Persistent sidebar with Dashboard, Agents, and Config pages
-- 👤 **Agent Avatars** — Custom avatar images per agent, fallback to emoji
-- 📋 **Agent Cards** — Click any node to inspect: name, emoji, model, status, workspace, and workspace file viewer
-- ✏️ **Agent Editor** — Full CRUD for agents: edit name, emoji (picker), model (combobox), workspace (directory picker), and view/edit workspace markdown files (SOUL, IDENTITY, TOOLS, MEMORY, USER, AGENTS, HEARTBEAT)
-- 😀 **Emoji Picker** — Rich emoji selection via `emoji-mart` integrated into the agent form
-- 🤖 **Model Combobox** — Searchable combobox listing all available models fetched from `/api/models`
-- 📁 **Directory Picker** — File system directory picker for agent workspace selection
-- 🔗 **Agent Multi-Select** — Link/unlink agents with multi-select component
-- 🟢 **Live Status** — Real-time active/idle indicators with animated pulses
-- ⚙️ **Config Page** — Full OpenClaw config editor with structured fields: key-value pairs, string arrays, password fields, dynamic map editor, and section cards
-- 🌙 **Dark Theme** — Slate-dark UI built with shadcn/ui components
-- 🔒 **Security Headers** — CSP, X-Frame-Options, HSTS and more via Next.js middleware
-- ⚡ **Server-side Config** — Reads `~/.openclaw/openclaw.json` server-only for security
-- 🎞️ **Smooth Animations** — Framer Motion transitions for cards and panels
-- 🗑️ **Delete Agents** — Remove agents with confirmation
-- 📝 **Inline File Editing** — Edit workspace markdown files directly from the dashboard
-- 🏠 **LAN Accessible** — Runs on port 9000, accessible from any device on your local network
+- 📊 **Live System Metrics** — CPU & memory history charts with 15m / 1h / 24h windows, polling or SSE live mode
+- 🤖 **Agent Management** — List, inspect, and configure agents; view avatar, status, model, and description
+- 🗺️ **Agents Map** — Interactive SVG topology map with animated active-agent rings and connection lines
+- ⚡ **Gateway Activity Feed** — Real-time event stream from the OpenClaw gateway (SSE + SQLite history)
+- ⚙️ **Config Editor** — Full YAML/JSON config editor with key-value, string array, password, and dynamic map fields
+- 🌙 **Dark / Light Mode** — Fully themed with `next-themes`
+- 📱 **Mobile Responsive** — Bottom navigation and mobile-optimised agent map view
+- 🔒 **Middleware Auth** — Optional bearer-token gateway authentication
 
 ---
 
-## 🆕 Recent Changes
+## 📸 Screenshots
 
-### Gateway Status Indicator
-The top header now displays a live **Gateway: Connected** (green) or **Gateway: Disconnected** (red) badge. It polls the OpenClaw gateway endpoint every few seconds and updates automatically — no manual refresh needed.
+| Dashboard | Agents |
+|-----------|--------|
+| ![dashboard](docs/screenshots/dashboard.png) | ![agents](docs/screenshots/agents.png) |
 
-### MiniMap Removed
-The ReactFlow MiniMap has been removed to maximize the graph viewport on all screen sizes. Navigation is handled by the built-in zoom/pan controls and the `fitView` behavior on load.
+| Config | Agents Map |
+|--------|------------|
+| ![config](docs/screenshots/config.png) | ![agents-map](docs/screenshots/agents-map.png) |
 
-### Graph Spacing & Zoom Improvements
-- Node spacing significantly increased: horizontal separation ~320px, vertical ~160–240px
-- `fitView` with `padding: 0.6` ensures the full graph is visible on load
-- `minZoom: 0.3` prevents over-zooming out on large graphs
-- All agent cards are comfortably readable without overlapping
-
-### LAN Accessibility
-The dashboard is served on **port 9000** and listens on all interfaces. Access it from any machine on your local network:
-```
-http://<your-machine-ip>:9000
-```
-Example: `http://10.0.10.22:9000`
+> Screenshots captured via Playwright in light mode.
 
 ---
 
-## 🖥️ Screenshots
+## 🚀 Setup
 
-### Dashboard principal
+### Prerequisites
 
-> Vue principale : sidebar + graphe ReactFlow interactif de la hiérarchie des agents. Les nœuds sont bien espacés, tout le graphe est visible au chargement. L'indicateur **Gateway: Connected** est visible dans le header en haut à gauche.
+- Node.js ≥ 18
+- pnpm (or npm / yarn)
+- OpenClaw installed and running (`openclaw gateway start`)
 
-### AgentCard avec avatar
-
-> Cliquer sur un nœud affiche la carte de l'agent avec son avatar, son modèle, son statut et ses fichiers workspace.
-
-### Page Agents — liste
-
-> `/agents` affiche tous les agents avec leur statut, emoji, modèle et actions.
-
-### Page Agents — panneau d'édition
-
-> Panneau d'édition complet : emoji picker, model combobox, directory picker, et éditeur de fichiers markdown intégré.
-
-### Page Config
-
-> `/config` expose tous les paramètres OpenClaw : clé/valeur, tableaux, maps dynamiques, mots de passe.
-
----
-
-## 🚀 Quick Start
+### Install & Run
 
 ```bash
 git clone https://github.com/your-org/openclaw-agent-dashboard
 cd openclaw-agent-dashboard
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+Open [http://localhost:3000](http://localhost:3000).
 
-> **Requirements:** OpenClaw installed and configured at `~/.openclaw/openclaw.json`
+### Environment Variables
 
-### Production (port 9000)
-
-```bash
-npm run build
-npm start   # binds to 0.0.0.0:9000 — accessible on LAN
-```
-
-Or via the LaunchAgent `io.manthis.openclaw-agent-dashboard` (auto-starts on login).
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENCLAW_GATEWAY_URL` | `http://127.0.0.1:18789` | Gateway base URL |
+| `ACTIVITY_DB_PATH` | `~/.openclaw/dashboard-activity.db` | SQLite activity log |
 
 ---
 
@@ -113,79 +65,74 @@ Or via the LaunchAgent `io.manthis.openclaw-agent-dashboard` (auto-starts on log
 
 ```
 src/
-├── app/
-│   ├── page.tsx                        # Dashboard — server component
-│   ├── layout.tsx                      # Root layout with Sidebar
-│   ├── agents/
-│   │   └── page.tsx                    # Agents list page
-│   ├── config/
-│   │   └── page.tsx                    # Config page
-│   └── api/
-│       ├── agents/
-│       │   ├── route.ts                # GET /api/agents, POST /api/agents
-│       │   ├── status/route.ts         # GET /api/agents/status
-│       │   └── [id]/
-│       │       ├── route.ts            # GET, PUT, DELETE /api/agents/[id]
-│       │       ├── avatar/route.ts     # GET /api/agents/[id]/avatar
-│       │       └── files/
-│       │           └── [filename]/
-│       │               └── route.ts    # GET, PUT /api/agents/[id]/files/[filename]
-│       ├── config/
-│       │   └── route.ts               # GET, PUT /api/config
-│       └── models/
-│           └── route.ts               # GET /api/models
-├── components/
-│   ├── Sidebar.tsx                     # Navigation sidebar (Dashboard / Agents / Config)
-│   ├── Header.tsx                      # Top bar with Gateway status indicator
-│   ├── DashboardClient.tsx             # Client wrapper for dashboard
-│   ├── AgentGraph.tsx                  # ReactFlow graph (SSR-safe, no MiniMap)
-│   ├── AgentNode.tsx                   # Custom ReactFlow node with avatar
-│   ├── AgentCard.tsx                   # Agent detail panel (dashboard)
-│   ├── AgentsPageClient.tsx            # Agents list + edit panel
-│   ├── StatusBadge.tsx                 # Active/Idle indicator
-│   ├── agents/
-│   │   ├── AgentMultiSelect.tsx        # Multi-select for agent linking
-│   │   ├── DirectoryPickerField.tsx    # FS directory picker input
-│   │   ├── EmojiPickerField.tsx        # emoji-mart powered emoji selector
-│   │   ├── ModelComboBox.tsx           # Searchable model selector
-│   │   └── ModelMultiSelect.tsx        # Multi-select for models
-│   ├── config/
-│   │   ├── ConfigPageClient.tsx        # Config page client
-│   │   ├── DynamicMapEditor.tsx        # Key-value map editor
-│   │   ├── KeyValueEditor.tsx          # Generic key-value editor
-│   │   ├── PasswordField.tsx           # Masked password input
-│   │   ├── SectionCard.tsx             # Config section card wrapper
-│   │   └── StringArrayEditor.tsx       # Array of strings editor
-│   └── ui/                            # shadcn/ui primitives
+  app/                  # Next.js App Router pages + API routes
+    api/
+      agents/           # GET /api/agents, /api/agents/[id], /status, /avatar
+      config/           # GET/PUT /api/config
+      metrics/          # GET timeseries, SSE stream
+      gateway/          # Activity feed + event history
+      system/           # System snapshot (CPU, mem)
+  components/
+    DashboardPageClient  # Main dashboard with metrics tiles + chart
+    AgentsPageClient     # Agent list + detail drawer
+    MobileDashboard      # SVG agent topology map (mobile)
+    AgentGraph           # ReactFlow agent graph (desktop)
+    CpuMemHistorySection # CPU & memory line charts
+    config/              # Config editor field components
+  lib/
+    metrics/
+      liveMetricsSampler  # Polls system + openclaw CLI
+      timeseriesStore     # In-memory + disk-persisted metrics ring buffer
+    hooks/
+      use-live-metrics    # SSE hook for live dashboard tiles
+      use-gateway-activity # SSE + history hook for activity feed
+    agents.ts             # Agent YAML config read/write
+    activityDb.ts         # SQLite event store (better-sqlite3)
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🧪 Tests
 
-| Layer | Technology |
-|-------|------------|
-| Framework | [Next.js 15](https://nextjs.org) (App Router, Server Components) |
-| Language | TypeScript (strict) |
-| Styling | Tailwind CSS + [shadcn/ui](https://ui.shadcn.com) |
-| Graph | [@xyflow/react](https://reactflow.dev) (ReactFlow v11) |
-| Emoji | [emoji-mart](https://github.com/missive/emoji-mart) + `@emoji-mart/react` + `@emoji-mart/data` |
-| Animations | [Framer Motion](https://www.framer.com/motion/) |
-| Icons | [Lucide React](https://lucide.dev) |
-| UI Primitives | [Radix UI](https://www.radix-ui.com) |
-| Runtime | Node.js (server-side config access) |
+```bash
+pnpm test              # Run all unit tests
+pnpm test --coverage   # With coverage report (target: ≥ 80%)
+pnpm playwright test   # E2E tests (requires running dev server)
+```
+
+Coverage: **80%+** statements/lines, **77%+** branches.
 
 ---
 
-## 🔐 Security
+## 📡 API Routes
 
-- All OpenClaw config is read **server-side only** — never exposed to the browser
-- Next.js middleware enforces: `CSP`, `X-Frame-Options: DENY`, `X-Content-Type-Options`, `HSTS`
-- API routes validate all inputs before writing to disk
-- `server-only` package enforced on config access utilities
+| Method | Route | Description |
+|--------|-------|-------------|
+| GET | `/api/agents` | List all agents |
+| GET | `/api/agents/[id]` | Get single agent |
+| GET | `/api/agents/status` | Agent status map |
+| GET | `/api/agents/[id]/avatar` | Agent avatar image |
+| GET/PUT | `/api/config` | Read/write openclaw config |
+| GET | `/api/metrics/timeseries` | Historical CPU/mem data |
+| GET | `/api/metrics/stream` | SSE live metrics stream |
+| GET | `/api/system` | System snapshot |
+| GET | `/api/gateway/activity` | Gateway events (SSE) |
+| GET | `/api/gateway/events/history` | Stored event history |
 
 ---
 
-## 📄 License
+## 🤖 Built with
 
-MIT — see [LICENSE](LICENSE)
+- **Next.js 15** (App Router)
+- **Tailwind CSS v4**
+- **ReactFlow** (agent graph)
+- **Recharts / Custom SVG** (metrics charts)
+- **better-sqlite3** (activity log)
+- **Playwright** (E2E tests)
+- **Jest + Testing Library** (unit tests)
+
+---
+
+## 👥 Contributors
+
+Built by the MOTHER agent pipeline: DATA · ATLAS · TARS · ASH · SKYNET
