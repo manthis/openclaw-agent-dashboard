@@ -110,3 +110,30 @@ export function getAgentsStatus(): Record<string, 'active' | 'idle'> {
   getAgents().forEach((a) => { result[a.id] = 'idle'; });
   return result;
 }
+
+export function createAgent(data: {
+  id: string;
+  name: string;
+  emoji: string;
+  model: string;
+  workspace: string;
+  theme: string;
+  avatar: string;
+}): void {
+  const config = readRawConfig();
+  if (!config.agents) config.agents = { list: [] };
+  if (!config.agents.list) config.agents.list = [];
+  const newRaw: RawAgent = {
+    id: data.id,
+    workspace: data.workspace,
+    model: { primary: data.model },
+    identity: {
+      name: data.name,
+      emoji: data.emoji,
+      theme: data.theme,
+      avatar: data.avatar || undefined,
+    },
+  };
+  (config.agents.list as RawAgent[]).push(newRaw);
+  writeRawConfig(config);
+}

@@ -81,9 +81,9 @@ export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: 
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
-        fitViewOptions={{ padding: 0.3 }}
+        fitViewOptions={{ padding: 0.4 }}
         minZoom={0.3}
-        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.6 }}
         colorMode="dark"
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#334155" />

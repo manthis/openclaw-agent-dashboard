@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { readOpenClawConfig } from '@/lib/config';
 
-const ALLOWED_FILES = ['SOUL.md','USER.md','AGENTS.md','HEARTBEAT.md','TOOLS.md','MEMORY.md','IDENTITY.md'];
+const ALLOWED_FILES = ['SOUL.md', 'USER.md', 'AGENTS.md', 'HEARTBEAT.md', 'TOOLS.md', 'MEMORY.md', 'IDENTITY.md'];
 
 function getWorkspace(id: string): string | null {
   const config = readOpenClawConfig();
@@ -17,18 +17,33 @@ export async function GET(
   { params }: { params: Promise<{ id: string; filename: string }> }
 ) {
   const { id, filename } = await params;
+
+  if (!/^[a-z0-9_-]{1,64}$/.test(id)) {
+    return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+  }
+
   const upper = filename.toUpperCase();
   if (!ALLOWED_FILES.includes(upper)) {
-    return NextResponse.json({ error: 'File not allowed' }, { status: 403 });
+    return NextResponse.json({ error: 'File not allowed' }, { status: 400 });
   }
+
   const ws = getWorkspace(id);
   if (!ws) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
-  const filePath = path.join(ws, upper);
+
+  const resolved = path.resolve(ws, upper);
+  if (!resolved.startsWith(path.resolve(ws) + path.sep) && resolved !== path.resolve(ws, upper)) {
+    return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
+  }
+  // Strict containment check
+  if (path.dirname(resolved) !== path.resolve(ws)) {
+    return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
+  }
+
   try {
-    const content = fs.readFileSync(filePath, 'utf-8');
-    return NextResponse.json({ filename: upper, content });
+    const content = fs.readFileSync(resolved, 'utf-8');
+    return new Response(content, { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   } catch {
-    return NextResponse.json({ filename: upper, content: '' });
+    return new Response('', { headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   }
 }
 
@@ -38,18 +53,38 @@ export async function PUT(
 ) {
   try {
     const { id, filename } = await params;
+
+    if (!/^[a-z0-9_-]{1,64}$/.test(id)) {
+      return NextResponse.json({ error: 'Invalid agent id' }, { status: 400 });
+    }
+
     const upper = filename.toUpperCase();
     if (!ALLOWED_FILES.includes(upper)) {
-      return NextResponse.json({ error: 'File not allowed' }, { status: 403 });
+      return NextResponse.json({ error: 'File not allowed' }, { status: 400 });
     }
+
     const ws = getWorkspace(id);
     if (!ws) return NextResponse.json({ error: 'Agent not found' }, { status: 404 });
-    const { content } = await request.json();
-    if (typeof content !== 'string') {
-      return NextResponse.json({ error: 'Invalid content' }, { status: 400 });
+
+    const resolved = path.resolve(ws, upper);
+    if (path.dirname(resolved) !== path.resolve(ws)) {
+      return NextResponse.json({ error: 'Path traversal detected' }, { status: 403 });
     }
+
+    const contentType = request.headers.get('content-type') ?? '';
+    let content: string;
+    if (contentType.includes('application/json')) {
+      const body = await request.json() as { content?: unknown };
+      if (typeof body.content !== 'string') {
+        return NextResponse.json({ error: 'Invalid content' }, { status: 400 });
+      }
+      content = body.content;
+    } else {
+      content = await request.text();
+    }
+
     fs.mkdirSync(ws, { recursive: true });
-    fs.writeFileSync(path.join(ws, upper), content, 'utf-8');
+    fs.writeFileSync(resolved, content, 'utf-8');
     return NextResponse.json({ success: true });
   } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
