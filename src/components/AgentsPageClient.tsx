@@ -79,7 +79,7 @@ function SectionPanel({
     <div className='border-t border-slate-700/50'>
       <button
         type='button'
-        className='w-full flex items-center justify-between px-6 py-3 text-left hover:bg-slate-800/30 transition-colors'
+        className='w-full flex items-center justify-between px-3 md:px-6 py-3 text-left hover:bg-slate-800/30 transition-colors'
         onClick={onToggle}
       >
         <span className='flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider'>
@@ -89,7 +89,7 @@ function SectionPanel({
         <span className='text-slate-600'>{open ? '▾' : '▸'}</span>
       </button>
       {open && (
-        <div className='px-6 pb-4 space-y-3'>
+        <div className='px-3 md:px-6 pb-4 space-y-3'>
           {children}
           <button
             type='button'
@@ -245,9 +245,9 @@ function AgentEditPanel({
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
-      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto' onClick={(e) => e.stopPropagation()}>
+      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto mx-3 md:mx-0' onClick={(e) => e.stopPropagation()}>
         {toast && <div className='fixed top-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50'>{toast}</div>}
-        <div className='flex items-center justify-between px-6 py-4 border-b border-slate-700'>
+        <div className='flex items-center justify-between px-3 md:px-6 py-4 border-b border-slate-700'>
           <div className='flex items-center gap-3'>
             <AgentAvatar agent={agent} />
             <div>
@@ -365,7 +365,7 @@ function AgentEditPanel({
         </SectionPanel>
 
         {/* WORKSPACE FILES */}
-        <div className='px-6 pb-6 border-t border-slate-700/50 pt-4'>
+        <div className='px-3 md:px-6 pb-6 border-t border-slate-700/50 pt-4'>
           <h3 className='text-slate-400 text-xs uppercase tracking-wider mb-3'>Workspace Files</h3>
           <div className='flex flex-wrap gap-1 mb-3'>
             {WORKSPACE_FILES.map((f) => (
@@ -422,12 +422,12 @@ function AddAgentModal({ agents, onClose, onCreated }: { agents: Agent[]; onClos
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
-      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto' onClick={(e) => e.stopPropagation()}>
-        <div className='flex items-center justify-between px-6 py-4 border-b border-slate-700'>
+      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-3 md:mx-0' onClick={(e) => e.stopPropagation()}>
+        <div className='flex items-center justify-between px-3 md:px-6 py-4 border-b border-slate-700'>
           <h2 className='text-white text-lg font-semibold'>Add Agent</h2>
           <button onClick={onClose} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
         </div>
-        <div className='px-6 py-4 space-y-3'>
+        <div className='px-3 md:px-6 py-4 space-y-3'>
           {error && <div className='text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-3 py-2'>{error}</div>}
           <div><label className={LABEL_CLS}>ID (required)</label><input className={INPUT_CLS} value={form.id} onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))} placeholder='my-agent' /></div>
           <div><label className={LABEL_CLS}>Name (required)</label><input className={INPUT_CLS} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder='My Agent' /></div>
@@ -468,8 +468,8 @@ function AddAgentModal({ agents, onClose, onCreated }: { agents: Agent[]; onClos
             <label htmlFor='addDefault' className='text-slate-400 text-sm cursor-pointer'>Default agent</label>
           </div>
         </div>
-        <div className='px-6 py-4 border-t border-slate-700'>
-          <button onClick={() => void handleCreate()} disabled={saving || !canSubmit} className='w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors'>
+        <div className='px-3 md:px-6 py-4 border-t border-slate-700'>
+          <button onClick={() => void handleCreate()} disabled={saving || !canSubmit} className='w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors min-h-[44px]'>
             {saving ? 'Creating...' : 'Create Agent'}
           </button>
         </div>
