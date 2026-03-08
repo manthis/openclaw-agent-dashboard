@@ -41,7 +41,8 @@ function redactConfig(data: unknown): unknown {
 }
 
 // SKYNET patch: validate baseUrl values to prevent SSRF
-const SSRF_BLOCKLIST = /^https?:\/\/(localhost|127\.|0\.0\.0\.0|\[::1\]|169\.254\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/i;
+// localhost/127.x intentionally allowed - local providers (e.g. Ollama) use these
+const SSRF_BLOCKLIST = /^https?:\/\/(0\.0\.0\.0|\[::1\]|169\.254\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.)/i;
 
 function validateBaseUrls(obj: unknown, depth = 0): string | null {
   if (depth > 10 || !obj || typeof obj !== 'object') return null;
