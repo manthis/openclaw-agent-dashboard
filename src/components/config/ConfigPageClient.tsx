@@ -7,10 +7,15 @@ import {
   Wrench, Server, MessageSquare, Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@/components/ui/select';
 import { SectionCard } from './SectionCard';
 import { StringArrayEditor } from './StringArrayEditor';
 import { KeyValueEditor } from './KeyValueEditor';
-import { DynamicMapEditor } from './DynamicMapEditor';
 import { PasswordField } from './PasswordField';
 
 // ---------------------------------------------------------------------------
@@ -70,29 +75,17 @@ function asStringRecord(v: unknown): Record<string, string> {
   return {};
 }
 
-function asObjectRecord(v: unknown): Record<string, Record<string, unknown>> {
-  if (v && typeof v === 'object' && !Array.isArray(v)) {
-    const out: Record<string, Record<string, unknown>> = {};
-    for (const [k, val] of Object.entries(v as JsonObject)) {
-      if (val && typeof val === 'object' && !Array.isArray(val)) {
-        out[k] = val as Record<string, unknown>;
-      }
-    }
-    return out;
-  }
-  return {};
-}
-
 // ---------------------------------------------------------------------------
 // Shared sub-components
 // ---------------------------------------------------------------------------
-function TextField({ label, value, onChange, type = 'text' }: {
-  label: string; value: string; onChange: (v: string) => void; type?: string;
+function TextField({ label, value, onChange, type = 'text', id }: {
+  label: string; value: string; onChange: (v: string) => void; type?: string; id?: string;
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-sm text-slate-400">{label}</label>
+      <label htmlFor={id} className="text-sm text-slate-400">{label}</label>
       <input
+        id={id}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
@@ -127,34 +120,62 @@ function SelectField({ label, value, onChange, options }: {
   return (
     <div className="space-y-1">
       <label className="text-sm text-slate-400">{label}</label>
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-      >
-        {options.map((o) => (
-          <option key={o} value={o}>{o}</option>
-        ))}
-      </select>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger className="w-full bg-slate-800 border-slate-700 text-white">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (
+            <SelectItem key={o} value={o}>{o}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   );
 }
 
-function ToggleField({ label, value, onChange }: {
-  label: string; value: boolean; onChange: (v: boolean) => void;
+function SwitchField({ label, checked, onChange }: {
+  label: string; checked: boolean; onChange: (v: boolean) => void;
 }) {
   return (
     <div className="flex items-center justify-between">
       <label className="text-sm text-slate-400">{label}</label>
-      <button
-        type="button"
-        onClick={() => onChange(!value)}
-        className={`relative w-10 h-5 rounded-full transition-colors ${value ? 'bg-indigo-500' : 'bg-slate-700'}`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${value ? 'translate-x-5' : 'translate-x-0'}`}
-        />
-      </button>
+      <Switch checked={checked} onCheckedChange={onChange} />
+    </div>
+  );
+}
+
+function JsonTextArea({ label, value, onChange }: {
+  label: string; value: unknown; onChange: (v: unknown) => void;
+}) {
+  const [text, setText] = useState(() => JSON.stringify(value ?? {}, null, 2));
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setText(JSON.stringify(value ?? {}, null, 2));
+  }, [value]);
+
+  const handleBlur = () => {
+    try {
+      const parsed: unknown = JSON.parse(text);
+      setJsonError(null);
+      onChange(parsed);
+    } catch {
+      setJsonError('Invalid JSON');
+    }
+  };
+
+  return (
+    <div className="space-y-1">
+      <label className="text-sm text-slate-400">{label}</label>
+      <textarea
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={handleBlur}
+        rows={10}
+        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-indigo-500 resize-y"
+      />
+      {jsonError && <p className="text-xs text-red-400">{jsonError}</p>}
     </div>
   );
 }
@@ -181,7 +202,7 @@ function LoggingSection({ config, update }: { config: JsonObject; update: (path:
 function AuthSection({ config, update }: { config: JsonObject; update: (path: string, v: unknown) => void }) {
   return (
     <SectionCard title="Auth Profiles" icon={<Shield className="w-4 h-4 text-indigo-400" />}>
-      <DynamicMapEditor label="Profiles" value={asObjectRecord(getPath(config, 'auth.profiles'))} onChange={(v) => update('auth.profiles', v)} />
+      <JsonTextArea label="Auth Configuration (JSON)" value={getPath(config, 'auth')} onChange={(v) => update('auth', v)} />
     </SectionCard>
   );
 }
@@ -190,7 +211,7 @@ function EnvironmentSection({ config, update }: { config: JsonObject; update: (p
   return (
     <SectionCard title="Environment" icon={<Box className="w-4 h-4 text-indigo-400" />}>
       <KeyValueEditor label="Environment Variables" value={asStringRecord(getPath(config, 'env.vars'))} onChange={(v) => update('env.vars', v)} keyPlaceholder="VAR_NAME" valuePlaceholder="value" />
-      <ToggleField label="Shell Env Enabled" value={asBool(getPath(config, 'env.shellEnv.enabled'))} onChange={(v) => update('env.shellEnv.enabled', v)} />
+      <SwitchField label="Shell Env Enabled" checked={asBool(getPath(config, 'env.shellEnv.enabled'))} onChange={(v) => update('env.shellEnv.enabled', v)} />
       <NumberField label="Shell Env Timeout (ms)" value={asNumber(getPath(config, 'env.shellEnv.timeoutMs'), 5000)} onChange={(v) => update('env.shellEnv.timeoutMs', v)} min={0} />
     </SectionCard>
   );
@@ -199,7 +220,8 @@ function EnvironmentSection({ config, update }: { config: JsonObject; update: (p
 function ModelsSection({ config, update }: { config: JsonObject; update: (path: string, v: unknown) => void }) {
   return (
     <SectionCard title="Models" icon={<Cpu className="w-4 h-4 text-indigo-400" />}>
-      <DynamicMapEditor label="Providers" value={asObjectRecord(getPath(config, 'models.providers'))} onChange={(v) => update('models.providers', v)} />
+      <SelectField label="Mode" value={asString(getPath(config, 'models.mode'), 'auto')} onChange={(v) => update('models.mode', v)} options={['auto', 'manual', 'fallback']} />
+      <JsonTextArea label="Providers (JSON)" value={getPath(config, 'models.providers')} onChange={(v) => update('models.providers', v)} />
     </SectionCard>
   );
 }
@@ -210,28 +232,29 @@ function AgentDefaultsSection({ config, update }: { config: JsonObject; update: 
     <SectionCard title="Agent Defaults" icon={<Settings2 className="w-4 h-4 text-indigo-400" />}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <TextField label="Workspace" value={asString(getPath(config, `${base}.workspace`))} onChange={(v) => update(`${base}.workspace`, v)} />
-        <NumberField label="Context Tokens" value={asNumber(getPath(config, `${base}.contextTokens`), 200000)} onChange={(v) => update(`${base}.contextTokens`, v)} min={0} />
-        <NumberField label="Timeout (seconds)" value={asNumber(getPath(config, `${base}.timeoutSeconds`), 1800)} onChange={(v) => update(`${base}.timeoutSeconds`, v)} min={0} />
-        <NumberField label="Max Concurrent" value={asNumber(getPath(config, `${base}.maxConcurrent`), 4)} onChange={(v) => update(`${base}.maxConcurrent`, v)} min={1} />
-        <SelectField label="Compaction Mode" value={asString(getPath(config, `${base}.compaction.mode`), 'safeguard')} onChange={(v) => update(`${base}.compaction.mode`, v)} options={['off', 'safeguard', 'aggressive']} />
-        <SelectField label="Sandbox Mode" value={asString(getPath(config, `${base}.sandbox.mode`), 'all')} onChange={(v) => update(`${base}.sandbox.mode`, v)} options={['off', 'all', 'tools']} />
+        <TextField label="Repo Root" value={asString(getPath(config, `${base}.repoRoot`))} onChange={(v) => update(`${base}.repoRoot`, v)} />
+        <TextField label="Model" value={asString(getPath(config, `${base}.model`))} onChange={(v) => update(`${base}.model`, v)} />
+        <TextField label="Secondary Model" value={asString(getPath(config, `${base}.secondaryModel`))} onChange={(v) => update(`${base}.secondaryModel`, v)} />
+        <SwitchField label="Skip Bootstrap" checked={asBool(getPath(config, `${base}.skipBootstrap`))} onChange={(v) => update(`${base}.skipBootstrap`, v)} />
+        <SwitchField label="No Cache" checked={asBool(getPath(config, `${base}.noCache`))} onChange={(v) => update(`${base}.noCache`, v)} />
+        <SelectField label="Thinking" value={asString(getPath(config, `${base}.thinking`), 'off')} onChange={(v) => update(`${base}.thinking`, v)} options={['off', 'low', 'medium', 'high', 'stream']} />
+        <NumberField label="Thinking Budget" value={asNumber(getPath(config, `${base}.thinkingBudget`))} onChange={(v) => update(`${base}.thinkingBudget`, v)} min={0} />
+        <NumberField label="Max Tokens" value={asNumber(getPath(config, `${base}.maxTokens`))} onChange={(v) => update(`${base}.maxTokens`, v)} min={0} />
+        <NumberField label="Temperature" value={asNumber(getPath(config, `${base}.temperature`))} onChange={(v) => update(`${base}.temperature`, v)} min={0} max={2} step={0.1} />
       </div>
-      <DynamicMapEditor label="Model Configurations" value={asObjectRecord(getPath(config, `${base}.models`))} onChange={(v) => update(`${base}.models`, v)} />
     </SectionCard>
   );
 }
 
-function AgentToolsSection({ config, update }: { config: JsonObject; update: (path: string, v: unknown) => void }) {
+function ToolsSection({ config, update }: { config: JsonObject; update: (path: string, v: unknown) => void }) {
   const base = 'tools';
   return (
     <SectionCard title="Tools" icon={<Wrench className="w-4 h-4 text-indigo-400" />}>
-      <ToggleField label="Web Search Enabled" value={asBool(getPath(config, `${base}.web.search.enabled`), true)} onChange={(v) => update(`${base}.web.search.enabled`, v)} />
-      <ToggleField label="Web Fetch Enabled" value={asBool(getPath(config, `${base}.web.fetch.enabled`), true)} onChange={(v) => update(`${base}.web.fetch.enabled`, v)} />
-      <ToggleField label="Agent-to-Agent Enabled" value={asBool(getPath(config, `${base}.agentToAgent.enabled`), true)} onChange={(v) => update(`${base}.agentToAgent.enabled`, v)} />
-      <StringArrayEditor label="Agent-to-Agent Allow List" value={asStringArray(getPath(config, `${base}.agentToAgent.allow`))} onChange={(v) => update(`${base}.agentToAgent.allow`, v)} />
-      <ToggleField label="Loop Detection Enabled" value={asBool(getPath(config, `${base}.loopDetection.enabled`), true)} onChange={(v) => update(`${base}.loopDetection.enabled`, v)} />
-      <NumberField label="Exec Timeout (seconds)" value={asNumber(getPath(config, `${base}.exec.timeoutSec`), 120)} onChange={(v) => update(`${base}.exec.timeoutSec`, v)} min={1} />
-      <DynamicMapEditor label="By Provider Overrides" value={asObjectRecord(getPath(config, `${base}.byProvider`))} onChange={(v) => update(`${base}.byProvider`, v)} />
+      <StringArrayEditor label="Allowed Tools" value={asStringArray(getPath(config, `${base}.allowedTools`))} onChange={(v) => update(`${base}.allowedTools`, v)} />
+      <StringArrayEditor label="Denied Tools" value={asStringArray(getPath(config, `${base}.deniedTools`))} onChange={(v) => update(`${base}.deniedTools`, v)} />
+      <StringArrayEditor label="Confirm Tools" value={asStringArray(getPath(config, `${base}.confirmTools`))} onChange={(v) => update(`${base}.confirmTools`, v)} />
+      <SwitchField label="Allow Shell" checked={asBool(getPath(config, `${base}.allowShell`))} onChange={(v) => update(`${base}.allowShell`, v)} />
+      <StringArrayEditor label="Allowed Shell Commands" value={asStringArray(getPath(config, `${base}.allowShellCommands`))} onChange={(v) => update(`${base}.allowShellCommands`, v)} />
     </SectionCard>
   );
 }
@@ -241,14 +264,11 @@ function GatewaySection({ config, update }: { config: JsonObject; update: (path:
   return (
     <SectionCard title="Gateway" icon={<Server className="w-4 h-4 text-indigo-400" />}>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <SelectField label="Mode" value={asString(getPath(config, `${base}.mode`), 'local')} onChange={(v) => update(`${base}.mode`, v)} options={['local', 'remote', 'tunnel']} />
-        <SelectField label="Bind" value={asString(getPath(config, `${base}.bind`), 'loopback')} onChange={(v) => update(`${base}.bind`, v)} options={['loopback', 'all']} />
+        <TextField label="Host" value={asString(getPath(config, `${base}.host`), 'localhost')} onChange={(v) => update(`${base}.host`, v)} />
         <NumberField label="Port" value={asNumber(getPath(config, `${base}.port`), 18789)} onChange={(v) => update(`${base}.port`, v)} min={1} max={65535} />
-        <ToggleField label="Control UI Enabled" value={asBool(getPath(config, `${base}.controlUi.enabled`), true)} onChange={(v) => update(`${base}.controlUi.enabled`, v)} />
       </div>
-      <SelectField label="Auth Mode" value={asString(getPath(config, `${base}.auth.mode`), 'token')} onChange={(v) => update(`${base}.auth.mode`, v)} options={['none', 'token', 'bearer']} />
-      <PasswordField label="Auth Token" value={asString(getPath(config, `${base}.auth.token`))} onChange={(v) => update(`${base}.auth.token`, v)} />
-      <StringArrayEditor label="Denied Node Commands" value={asStringArray(getPath(config, `${base}.nodes.denyCommands`))} onChange={(v) => update(`${base}.nodes.denyCommands`, v)} />
+      <PasswordField label="Secret" value={asString(getPath(config, `${base}.secret`))} onChange={(v) => update(`${base}.secret`, v)} />
+      <SwitchField label="HTTPS" checked={asBool(getPath(config, `${base}.https`))} onChange={(v) => update(`${base}.https`, v)} />
     </SectionCard>
   );
 }
@@ -257,13 +277,14 @@ function ChannelsSection({ config, update }: { config: JsonObject; update: (path
   return (
     <SectionCard title="Channels" icon={<MessageSquare className="w-4 h-4 text-indigo-400" />}>
       <h4 className="text-sm font-medium text-slate-300">Telegram</h4>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ToggleField label="Enabled" value={asBool(getPath(config, 'channels.telegram.enabled'), true)} onChange={(v) => update('channels.telegram.enabled', v)} />
-        <SelectField label="Streaming" value={asString(getPath(config, 'channels.telegram.streaming'), 'partial')} onChange={(v) => update('channels.telegram.streaming', v)} options={['off', 'partial', 'full']} />
-        <SelectField label="DM Policy" value={asString(getPath(config, 'channels.telegram.dmPolicy'), 'pairing')} onChange={(v) => update('channels.telegram.dmPolicy', v)} options={['pairing', 'open', 'deny']} />
-        <SelectField label="Group Policy" value={asString(getPath(config, 'channels.telegram.groupPolicy'), 'allowlist')} onChange={(v) => update('channels.telegram.groupPolicy', v)} options={['allowlist', 'denylist', 'open']} />
-      </div>
-      <PasswordField label="Bot Token" value={asString(getPath(config, 'channels.telegram.botToken'))} onChange={(v) => update('channels.telegram.botToken', v)} />
+      <PasswordField label="Bot Token" value={asString(getPath(config, 'channels.telegram.token'))} onChange={(v) => update('channels.telegram.token', v)} />
+      <TextField label="Webhook URL" value={asString(getPath(config, 'channels.telegram.webhookUrl'))} onChange={(v) => update('channels.telegram.webhookUrl', v)} />
+      <StringArrayEditor label="Allowed Users" value={asStringArray(getPath(config, 'channels.telegram.allowedUsers'))} onChange={(v) => update('channels.telegram.allowedUsers', v)} />
+
+      <div className="border-t border-slate-700 pt-4 mt-4" />
+      <h4 className="text-sm font-medium text-slate-300">Discord</h4>
+      <PasswordField label="Bot Token" value={asString(getPath(config, 'channels.discord.token'))} onChange={(v) => update('channels.discord.token', v)} />
+      <TextField label="Guild ID" value={asString(getPath(config, 'channels.discord.guildId'))} onChange={(v) => update('channels.discord.guildId', v)} />
     </SectionCard>
   );
 }
@@ -274,15 +295,14 @@ function SecuritySection({ config, update }: { config: JsonObject; update: (path
       <StringArrayEditor label="Allowed Origins" value={asStringArray(getPath(config, 'security.allowedOrigins'))} onChange={(v) => update('security.allowedOrigins', v)} />
       <StringArrayEditor label="Trusted Proxies" value={asStringArray(getPath(config, 'security.trustedProxies'))} onChange={(v) => update('security.trustedProxies', v)} />
       <TextField label="Max Body Size" value={asString(getPath(config, 'security.maxBodySize'), '1mb')} onChange={(v) => update('security.maxBodySize', v)} />
-      <ToggleField label="Elevated Commands Enabled" value={asBool(getPath(config, 'tools.elevated.enabled'), true)} onChange={(v) => update('tools.elevated.enabled', v)} />
     </SectionCard>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Tabs
+// Tab definitions
 // ---------------------------------------------------------------------------
-const TABS = [
+const TAB_ITEMS = [
   { id: 'logging', label: 'Logging', icon: FileText },
   { id: 'auth', label: 'Auth', icon: Shield },
   { id: 'environment', label: 'Environment', icon: Box },
@@ -304,7 +324,6 @@ export function ConfigPageClient() {
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [dirty, setDirty] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('logging');
   const originalRef = useRef<string>('');
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -379,7 +398,7 @@ export function ConfigPageClient() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
-      {/* Header */}
+      {/* Sticky Header */}
       <div className="flex items-center justify-between sticky top-0 z-10 bg-neutral-950 py-3 -mt-3 -mx-1 px-1">
         <div>
           <h1 className="text-xl font-semibold text-white">Configuration</h1>
@@ -387,10 +406,10 @@ export function ConfigPageClient() {
         </div>
         <div className="flex items-center gap-3">
           {dirty && (
-            <span className="text-xs text-amber-400 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            <Badge variant="outline" className="text-amber-400 border-amber-400/50">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse mr-1" />
               Unsaved changes
-            </span>
+            </Badge>
           )}
           <Button
             onClick={save}
@@ -403,36 +422,27 @@ export function ConfigPageClient() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-slate-800 pb-px">
-        {TABS.map(({ id, label, icon: Icon }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-t-lg transition-colors whitespace-nowrap ${
-              activeTab === id
-                ? 'bg-slate-800 text-indigo-300 border-b-2 border-indigo-500'
-                : 'text-slate-500 hover:text-slate-300 hover:bg-slate-900'
-            }`}
-          >
-            <Icon className="w-3.5 h-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* shadcn/ui Tabs */}
+      <Tabs defaultValue="logging">
+        <TabsList className="w-full flex-wrap h-auto bg-slate-900/50">
+          {TAB_ITEMS.map(({ id, label, icon: Icon }) => (
+            <TabsTrigger key={id} value={id} className="gap-1.5 data-[state=active]:text-indigo-300">
+              <Icon className="w-3.5 h-3.5" />
+              {label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
 
-      {/* Content */}
-      <div>
-        {activeTab === 'logging' && <LoggingSection config={config} update={update} />}
-        {activeTab === 'auth' && <AuthSection config={config} update={update} />}
-        {activeTab === 'environment' && <EnvironmentSection config={config} update={update} />}
-        {activeTab === 'models' && <ModelsSection config={config} update={update} />}
-        {activeTab === 'defaults' && <AgentDefaultsSection config={config} update={update} />}
-        {activeTab === 'tools' && <AgentToolsSection config={config} update={update} />}
-        {activeTab === 'gateway' && <GatewaySection config={config} update={update} />}
-        {activeTab === 'channels' && <ChannelsSection config={config} update={update} />}
-        {activeTab === 'security' && <SecuritySection config={config} update={update} />}
-      </div>
+        <TabsContent value="logging"><LoggingSection config={config} update={update} /></TabsContent>
+        <TabsContent value="auth"><AuthSection config={config} update={update} /></TabsContent>
+        <TabsContent value="environment"><EnvironmentSection config={config} update={update} /></TabsContent>
+        <TabsContent value="models"><ModelsSection config={config} update={update} /></TabsContent>
+        <TabsContent value="defaults"><AgentDefaultsSection config={config} update={update} /></TabsContent>
+        <TabsContent value="tools"><ToolsSection config={config} update={update} /></TabsContent>
+        <TabsContent value="gateway"><GatewaySection config={config} update={update} /></TabsContent>
+        <TabsContent value="channels"><ChannelsSection config={config} update={update} /></TabsContent>
+        <TabsContent value="security"><SecuritySection config={config} update={update} /></TabsContent>
+      </Tabs>
 
       {/* Toast */}
       {toast && (
