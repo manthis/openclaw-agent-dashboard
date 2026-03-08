@@ -371,13 +371,13 @@ function AgentEditPanel({
             ))}
           </div>
           <textarea className='w-full h-48 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-700 dark:text-slate-300 text-xs font-mono rounded-lg p-3 focus:outline-none focus:border-indigo-500 resize-y' value={fileContents[activeFile] ?? ''} onChange={(e) => setFileContents((prev) => ({ ...prev, [activeFile]: e.target.value }))} placeholder={`${activeFile}.md content...`} />
-          <button onClick={() => void handleFileSave()} disabled={fileSaving} className='mt-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors'>
+          <button onClick={() => void handleFileSave()} disabled={fileSaving} className='mt-2 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 disabled:opacity-50 text-gray-800 dark:text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors'>
             {fileSaving ? 'Saving...' : `Save ${activeFile}.md`}
           </button>
         </div>
 
         {/* DELETE */}
-        <div className='px-3 md:px-6 pb-6 pt-4 border-t border-slate-700/50 space-y-2'>
+        <div className='px-3 md:px-6 pb-6 pt-4 border-t border-gray-200 dark:border-slate-700/50 space-y-2'>
           {!confirmDelete ? (
             <button onClick={() => setConfirmDelete(true)} disabled={deleting} className='w-full flex items-center justify-center gap-2 bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-400 text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
               <Trash2 className='w-4 h-4' />
@@ -390,7 +390,7 @@ function AgentEditPanel({
                 {deleting ? 'Deleting...' : 'Confirm delete'}
               </button>
               <p className='text-red-400 text-xs text-center'>This action cannot be undone</p>
-              <button onClick={() => setConfirmDelete(false)} className='w-full flex items-center justify-center bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
+              <button onClick={() => setConfirmDelete(false)} className='w-full flex items-center justify-center bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-800 dark:text-slate-200 text-sm font-medium rounded-lg transition-colors min-h-[44px]'>
                 Cancel
               </button>
             </>
@@ -441,10 +441,10 @@ function AddAgentModal({ agents, onClose, onCreated }: { agents: Agent[]; onClos
 
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
-      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-3 md:mx-0' onClick={(e) => e.stopPropagation()}>
-        <div className='flex items-center justify-between px-3 md:px-6 py-4 border-b border-slate-700'>
-          <h2 className='text-white text-lg font-semibold'>Add Agent</h2>
-          <button onClick={onClose} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
+      <div className='bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-3 md:mx-0' onClick={(e) => e.stopPropagation()}>
+        <div className='flex items-center justify-between px-3 md:px-6 py-4 border-b border-gray-200 dark:border-slate-700'>
+          <h2 className='text-gray-900 dark:text-white text-lg font-semibold'>Add Agent</h2>
+          <button onClick={onClose} className='text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
         </div>
         <div className='px-3 md:px-6 py-4 space-y-3'>
           {error && <div className='text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-3 py-2'>{error}</div>}
@@ -454,7 +454,7 @@ function AddAgentModal({ agents, onClose, onCreated }: { agents: Agent[]; onClos
             <label className={LABEL_CLS}>Emoji</label>
             <div className='flex items-center gap-3'>
               <EmojiPickerField value={form.emoji} onChange={(emoji) => setForm((f) => ({ ...f, emoji }))} />
-              <span className='text-slate-500 text-xs'>Click to pick</span>
+              <span className='text-gray-400 dark:text-slate-500 text-xs'>Click to pick</span>
             </div>
           </div>
           <div>
@@ -484,10 +484,10 @@ function AddAgentModal({ agents, onClose, onCreated }: { agents: Agent[]; onClos
           </div>
           <div className='flex items-center gap-3'>
             <Switch id='addDefault' checked={isDefault} onCheckedChange={setIsDefault} />
-            <label htmlFor='addDefault' className='text-slate-400 text-sm cursor-pointer'>Default agent</label>
+            <label htmlFor='addDefault' className='text-gray-500 dark:text-slate-400 text-sm cursor-pointer'>Default agent</label>
           </div>
         </div>
-        <div className='px-3 md:px-6 py-4 border-t border-slate-700'>
+        <div className='px-3 md:px-6 py-4 border-t border-gray-200 dark:border-slate-700'>
           <button onClick={() => void handleCreate()} disabled={saving || !canSubmit} className='w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium py-2.5 rounded-lg transition-colors min-h-[44px]'>
             {saving ? 'Creating...' : 'Create Agent'}
           </button>
@@ -568,19 +568,19 @@ export function AgentsPageClient() {
   const handleDeleted = (id: string) => setAgents((prev) => prev.filter((a) => a.id !== id));
 
   return (
-    <main className='flex-1 bg-slate-950 p-3 md:p-6'>
+    <main className='flex-1 bg-gray-50 dark:bg-slate-950 p-3 md:p-6'>
       <div className='max-w-6xl mx-auto'>
         <div className='flex items-center justify-between mb-4 md:mb-6'>
           <div>
-            <h1 className='text-white text-xl md:text-2xl font-bold'>Agents</h1>
-            <p className='text-slate-400 text-xs md:text-sm mt-1'>{agents.length} agent{agents.length !== 1 ? 's' : ''} configured</p>
+            <h1 className='text-gray-900 dark:text-white text-xl md:text-2xl font-bold'>Agents</h1>
+            <p className='text-gray-500 dark:text-slate-400 text-xs md:text-sm mt-1'>{agents.length} agent{agents.length !== 1 ? 's' : ''} configured</p>
           </div>
           <button onClick={() => setShowAdd(true)} className='bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-3 md:px-4 py-2.5 md:py-2 rounded-lg transition-colors min-h-[44px]'>+ Add Agent</button>
         </div>
         {loading ? (
-          <div className='text-slate-500 text-sm'>Loading agents...</div>
+          <div className='text-gray-500 dark:text-slate-500 text-sm'>Loading agents...</div>
         ) : agents.length === 0 ? (
-          <div className='text-slate-500 text-sm'>No agents found.</div>
+          <div className='text-gray-500 dark:text-slate-500 text-sm'>No agents found.</div>
         ) : (
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
             {agents.map((agent) => (
