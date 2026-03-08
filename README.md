@@ -18,10 +18,13 @@ A beautiful, real-time dashboard for monitoring your OpenClaw agent network. Vis
 - ⚡ **Server-side Config** — Reads `~/.openclaw/openclaw.json` server-only for security
 - 🎞️ **Smooth Animations** — Framer Motion for node entrance and card transitions
 
-## 🖥️ Screenshot
+## 🖥️ Screenshots
 
-> Dashboard shows the HAL9000 → MOTHER → Agents hierarchy in a ReactFlow graph.
-> Clicking any agent reveals a detailed card panel in the bottom-right corner.
+### Dashboard principal
+![Dashboard](public/screenshots/dashboard-main.png)
+
+> Vue principale du dashboard : graphe ReactFlow de la hiérarchie HAL9000 → MOTHER → Agents.
+> Cliquer sur un agent affiche un panneau de détails en bas à droite.
 
 ## 🚀 Quick Start
 
