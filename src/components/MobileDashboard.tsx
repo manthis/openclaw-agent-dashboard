@@ -106,7 +106,7 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
             r={NODE_HALF + 8}
             fill="none"
             stroke="#00ff88"
-            strokeWidth={6}
+            strokeWidth={3}
             strokeDasharray="22 18"
             strokeLinecap="round"
             filter="url(#neonBlur)"
@@ -127,7 +127,7 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
             r={NODE_HALF + 8}
             fill="none"
             stroke="#00ff88"
-            strokeWidth={3.5}
+            strokeWidth={1.8}
             strokeDasharray="22 18"
             strokeLinecap="round"
           >
@@ -189,6 +189,62 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
   );
 }
 
+interface ActiveLineProps {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  lineKey: string;
+}
+
+function ActiveConnectionLine({ x1, y1, x2, y2, lineKey }: ActiveLineProps) {
+  // Compute path length for dash animation
+  const dx = x2 - x1;
+  const dy = y2 - y1;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const dashLen = Math.min(12, len * 0.25);
+  const gapLen = Math.min(20, len * 0.4);
+  const dashArray = `${dashLen} ${gapLen}`;
+
+  return (
+    <g>
+      {/* Glow layer */}
+      <line
+        x1={x1} y1={y1} x2={x2} y2={y2}
+        stroke="#d400ff"
+        strokeWidth={6}
+        strokeLinecap="round"
+        filter="url(#neonPurpleBlur)"
+        opacity={0.6}
+      />
+      {/* Sharp animated dash layer */}
+      <line
+        x1={x1} y1={y1} x2={x2} y2={y2}
+        stroke="#d400ff"
+        strokeWidth={2.5}
+        strokeLinecap="round"
+        strokeDasharray={dashArray}
+      >
+        <animate
+          attributeName="stroke-dashoffset"
+          from={len}
+          to={0}
+          dur="0.8s"
+          repeatCount="indefinite"
+        />
+      </line>
+      {/* Travelling packet dot */}
+      <circle r={3} fill="#f0aaff" opacity={0.9} filter="url(#neonPurpleBlur)">
+        <animateMotion
+          dur="1.2s"
+          repeatCount="indefinite"
+          path={`M${x1},${y1} L${x2},${y2}`}
+        />
+      </circle>
+    </g>
+  );
+}
+
 interface MobileDashboardProps {
   agents: Agent[];
   relations: AgentRelation[];
@@ -225,12 +281,29 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
           <filter id="neonBlur" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
           </filter>
+          <filter id="neonPurpleBlur" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur" />
+          </filter>
         </defs>
 
         {relations.map((rel, i) => {
           const from = positions.find((p) => p.agent.id === rel.source);
           const to = positions.find((p) => p.agent.id === rel.target);
           if (!from || !to) return null;
+          const isActiveLink =
+            from.agent.status === 'active' || to.agent.status === 'active';
+          if (isActiveLink) {
+            return (
+              <ActiveConnectionLine
+                key={i}
+                lineKey={String(i)}
+                x1={from.x}
+                y1={from.y + NODE_HALF}
+                x2={to.x}
+                y2={to.y - NODE_HALF}
+              />
+            );
+          }
           return (
             <line
               key={i}
