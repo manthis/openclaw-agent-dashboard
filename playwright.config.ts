@@ -1,10 +1,28 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
+
 export default defineConfig({
   testDir: './e2e',
-  use: { baseURL: 'http://localhost:3000' },
+  timeout: 30_000,
+  use: {
+    baseURL: 'http://localhost:9000',
+  },
+  projects: [
+    {
+      name: 'desktop',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 390, height: 844 },
+      },
+    },
+  ],
   webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
+    command: 'npm run dev -- -p 9000',
+    url: 'http://localhost:9000',
     reuseExistingServer: !process.env.CI,
+    timeout: 60_000,
   },
 });
