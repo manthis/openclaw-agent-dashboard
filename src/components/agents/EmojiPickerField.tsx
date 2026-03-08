@@ -46,7 +46,7 @@ export function EmojiPickerField({ value, onChange, className }: EmojiPickerFiel
       <button
         type='button'
         onClick={() => setOpen((o) => !o)}
-        className='text-2xl w-12 h-10 flex items-center justify-center bg-slate-800 border border-slate-700 rounded-lg hover:border-indigo-500 transition-colors'
+        className='text-2xl w-12 h-10 flex items-center justify-center bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg hover:border-indigo-500 transition-colors'
         aria-label='Pick emoji'
       >
         {value || '🤖'}
@@ -57,7 +57,7 @@ export function EmojiPickerField({ value, onChange, className }: EmojiPickerFiel
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             <Picker data={emojiData as any} theme='dark' onEmojiSelect={handleSelect} />
           ) : (
-            <div className='bg-slate-800 border border-slate-700 rounded-lg p-4 text-slate-400 text-sm'>Loading...</div>
+            <div className='bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 text-gray-500 dark:text-slate-400 text-sm'>Loading...</div>
           )}
         </div>
       )}

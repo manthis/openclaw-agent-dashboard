@@ -54,7 +54,7 @@ export function ActivitySparkline({ data }: { data: DataPoint[] }) {
       </svg>
       {tooltip && (
         <div
-          className="fixed z-50 pointer-events-none bg-slate-800 border border-slate-600 text-slate-200 text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap"
+          className="fixed z-50 pointer-events-none bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-200 text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap"
           style={{
             left: tooltip.x,
             top: tooltip.y,

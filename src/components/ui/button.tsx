@@ -13,9 +13,9 @@ const sizeClasses: Record<NonNullable<ButtonProps['size']>, string> = {
 };
 
 const variantClasses: Record<NonNullable<ButtonProps['variant']>, string> = {
-  default: 'bg-neutral-700 hover:bg-neutral-600 text-neutral-100 border border-neutral-600',
-  ghost: 'bg-transparent hover:bg-neutral-800 text-neutral-400 border-none',
-  outline: 'bg-transparent border border-neutral-600 text-neutral-300 hover:bg-neutral-800',
+  default: 'bg-gray-200 dark:bg-neutral-700 hover:bg-gray-300 dark:hover:bg-neutral-600 text-gray-800 dark:text-neutral-100 border border-gray-300 dark:border-neutral-600',
+  ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-neutral-800 text-gray-500 dark:text-neutral-400 border-none',
+  outline: 'bg-transparent border border-gray-300 dark:border-neutral-600 text-gray-600 dark:text-neutral-300 hover:bg-gray-100 dark:hover:bg-neutral-800',
 };
 
 export function Button({ size = 'md', variant = 'default', className, children, ...props }: ButtonProps) {

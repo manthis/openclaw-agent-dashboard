@@ -36,7 +36,7 @@ const TYPE_BADGE_COLORS: Record<string, string> = {
   message_in: 'bg-blue-500/20 text-blue-400',
   message_out: 'bg-indigo-500/20 text-indigo-400',
 };
-const DEFAULT_BADGE = 'bg-slate-600/20 text-slate-400';
+const DEFAULT_BADGE = 'bg-gray-100 dark:bg-slate-600/20 text-gray-500 dark:text-slate-400';
 
 function systemToLiveMetrics(d: SystemData): LiveMetricsSnapshot {
   return {

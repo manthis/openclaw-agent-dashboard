@@ -83,13 +83,13 @@ function TextField({ label, value, onChange, type = 'text', id }: {
 }) {
   return (
     <div className="space-y-1">
-      <label htmlFor={id} className="text-sm text-slate-400">{label}</label>
+      <label htmlFor={id} className="text-sm text-gray-500 dark:text-slate-400">{label}</label>
       <input
         id={id}
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+        className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500"
       />
     </div>
   );
@@ -100,7 +100,7 @@ function NumberField({ label, value, onChange, min, max, step }: {
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-sm text-slate-400">{label}</label>
+      <label className="text-sm text-gray-500 dark:text-slate-400">{label}</label>
       <input
         type="number"
         value={value}
@@ -108,7 +108,7 @@ function NumberField({ label, value, onChange, min, max, step }: {
         max={max}
         step={step}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
+        className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500"
       />
     </div>
   );
@@ -119,9 +119,9 @@ function SelectField({ label, value, onChange, options }: {
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-sm text-slate-400">{label}</label>
+      <label className="text-sm text-gray-500 dark:text-slate-400">{label}</label>
       <Select value={value} onValueChange={onChange}>
-        <SelectTrigger className="w-full bg-slate-800 border-slate-700 text-white">
+        <SelectTrigger className="w-full bg-gray-50 dark:bg-slate-800 border-gray-300 dark:border-slate-700 text-gray-900 dark:text-white">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -139,7 +139,7 @@ function SwitchField({ label, checked, onChange }: {
 }) {
   return (
     <div className="flex items-center justify-between">
-      <label className="text-sm text-slate-400">{label}</label>
+      <label className="text-sm text-gray-500 dark:text-slate-400">{label}</label>
       <Switch checked={checked} onCheckedChange={onChange} />
     </div>
   );
@@ -167,13 +167,13 @@ function JsonTextArea({ label, value, onChange }: {
 
   return (
     <div className="space-y-1">
-      <label className="text-sm text-slate-400">{label}</label>
+      <label className="text-sm text-gray-500 dark:text-slate-400">{label}</label>
       <textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
         onBlur={handleBlur}
         rows={10}
-        className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none focus:border-indigo-500 resize-y"
+        className="w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-2 text-xs text-gray-700 dark:text-slate-300 font-mono focus:outline-none focus:border-indigo-500 resize-y"
       />
       {jsonError && <p className="text-xs text-red-400">{jsonError}</p>}
     </div>
@@ -276,13 +276,13 @@ function GatewaySection({ config, update }: { config: JsonObject; update: (path:
 function ChannelsSection({ config, update }: { config: JsonObject; update: (path: string, v: unknown) => void }) {
   return (
     <SectionCard title="Channels" icon={<MessageSquare className="w-4 h-4 text-indigo-400" />}>
-      <h4 className="text-sm font-medium text-slate-300">Telegram</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300">Telegram</h4>
       <PasswordField label="Bot Token" value={asString(getPath(config, 'channels.telegram.token'))} onChange={(v) => update('channels.telegram.token', v)} />
       <TextField label="Webhook URL" value={asString(getPath(config, 'channels.telegram.webhookUrl'))} onChange={(v) => update('channels.telegram.webhookUrl', v)} />
       <StringArrayEditor label="Allowed Users" value={asStringArray(getPath(config, 'channels.telegram.allowedUsers'))} onChange={(v) => update('channels.telegram.allowedUsers', v)} />
 
       <div className="border-t border-slate-700 pt-4 mt-4" />
-      <h4 className="text-sm font-medium text-slate-300">Discord</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-slate-300">Discord</h4>
       <PasswordField label="Bot Token" value={asString(getPath(config, 'channels.discord.token'))} onChange={(v) => update('channels.discord.token', v)} />
       <TextField label="Guild ID" value={asString(getPath(config, 'channels.discord.guildId'))} onChange={(v) => update('channels.discord.guildId', v)} />
     </SectionCard>
@@ -399,10 +399,10 @@ export function ConfigPageClient() {
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-6">
       {/* Sticky Header */}
-      <div className="flex items-center justify-between sticky top-0 z-10 bg-neutral-950 py-3 -mt-3 -mx-1 px-1">
+      <div className="flex items-center justify-between sticky top-0 z-10 bg-gray-50 dark:bg-neutral-950 py-3 -mt-3 -mx-1 px-1">
         <div>
-          <h1 className="text-xl font-semibold text-white">Configuration</h1>
-          <p className="text-sm text-slate-400">Edit openclaw.json settings</p>
+          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Configuration</h1>
+          <p className="text-sm text-gray-500 dark:text-slate-400">Edit openclaw.json settings</p>
         </div>
         <div className="flex items-center gap-3">
           {dirty && (
@@ -424,7 +424,7 @@ export function ConfigPageClient() {
 
       {/* shadcn/ui Tabs */}
       <Tabs defaultValue="logging">
-        <TabsList className="w-full flex-wrap h-auto bg-slate-900/50">
+        <TabsList className="w-full flex-wrap h-auto bg-gray-100 dark:bg-slate-900/50">
           {TAB_ITEMS.map(({ id, label, icon: Icon }) => (
             <TabsTrigger key={id} value={id} className="gap-1.5 data-[state=active]:text-indigo-300">
               <Icon className="w-3.5 h-3.5" />

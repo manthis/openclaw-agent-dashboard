@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 export default function AgentsPage() {
   return (
-    <Suspense fallback={<div className="text-slate-500 p-6">Loading...</div>}>
+    <Suspense fallback={<div className="text-gray-500 dark:text-slate-500 p-6">Loading...</div>}>
       <AgentsPageClient />
     </Suspense>
   );

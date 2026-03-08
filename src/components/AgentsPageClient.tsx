@@ -584,16 +584,16 @@ export function AgentsPageClient() {
         ) : (
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
             {agents.map((agent) => (
-              <button key={agent.id} onClick={() => setSelected(agent)} className='bg-slate-900 border border-slate-700 hover:border-indigo-500/50 rounded-xl p-4 text-left transition-all hover:shadow-lg hover:shadow-indigo-500/10 group'>
+              <button key={agent.id} onClick={() => setSelected(agent)} className='bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 hover:border-indigo-500/50 rounded-xl p-4 text-left transition-all hover:shadow-lg hover:shadow-indigo-500/10 group'>
                 <div className='flex items-start gap-3 mb-3'>
                   <AgentAvatar agent={agent} />
                   <div className='flex-1 min-w-0'>
-                    <p className='text-white text-sm font-semibold truncate group-hover:text-indigo-300 transition-colors'>{agent.name}</p>
-                    <p className='text-slate-500 text-xs font-mono truncate'>{agent.id}</p>
+                    <p className='text-gray-900 dark:text-white text-sm font-semibold truncate group-hover:text-indigo-300 transition-colors'>{agent.name}</p>
+                    <p className='text-gray-500 dark:text-slate-500 text-xs font-mono truncate'>{agent.id}</p>
                   </div>
                 </div>
                 <div className='flex items-center justify-between'>
-                  <p className='text-slate-400 text-xs font-mono truncate max-w-[60%]'>{agent.model}</p>
+                  <p className='text-gray-500 dark:text-slate-400 text-xs font-mono truncate max-w-[60%]'>{agent.model}</p>
                   <StatusBadge status={agent.status} />
                 </div>
                 {activityData[agent.id] && (

@@ -13,7 +13,7 @@ interface ModelComboBoxProps {
   className?: string;
 }
 
-const INPUT_CLS = 'w-full bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500';
+const INPUT_CLS = 'w-full bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500';
 
 export function ModelComboBox({ value, onChange, placeholder, className }: ModelComboBoxProps) {
   const [models, setModels] = useState<ModelOption[]>([]);
@@ -64,16 +64,16 @@ export function ModelComboBox({ value, onChange, placeholder, className }: Model
         placeholder={placeholder ?? 'anthropic/claude-sonnet-4-6'}
       />
       {open && filtered.length > 0 && (
-        <ul className='absolute z-40 w-full mt-1 bg-slate-800 border border-slate-700 rounded-lg shadow-xl max-h-52 overflow-y-auto'>
+        <ul className='absolute z-40 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl max-h-52 overflow-y-auto'>
           {filtered.map((m) => (
             <li key={m.id}>
               <button
                 type='button'
-                className='w-full text-left px-3 py-2 text-sm text-slate-200 hover:bg-slate-700 transition-colors font-mono'
+                className='w-full text-left px-3 py-2 text-sm text-gray-900 dark:text-slate-200 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors font-mono'
                 onClick={() => handleSelect(m.id)}
               >
                 {m.id}
-                {m.alias && <span className='ml-2 text-slate-500 text-xs'>({m.alias})</span>}
+                {m.alias && <span className='ml-2 text-gray-400 dark:text-slate-500 text-xs'>({m.alias})</span>}
               </button>
             </li>
           ))}

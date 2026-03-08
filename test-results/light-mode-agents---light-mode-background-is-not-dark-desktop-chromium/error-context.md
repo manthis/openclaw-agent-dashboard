@@ -1,0 +1,61 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e4]:
+      - generic [ref=e5]:
+        - img [ref=e6]
+        - text: OpenClaw
+      - navigation [ref=e9]:
+        - link "Dashboard" [ref=e10] [cursor=pointer]:
+          - /url: /dashboard
+          - img [ref=e11]
+          - text: Dashboard
+        - link "Agents Map" [ref=e16] [cursor=pointer]:
+          - /url: /agents-map
+          - img [ref=e17]
+          - text: Agents Map
+        - link "Agents" [ref=e22] [cursor=pointer]:
+          - /url: /agents
+          - img [ref=e23]
+          - text: Agents
+        - link "Config" [ref=e28] [cursor=pointer]:
+          - /url: /config
+          - img [ref=e29]
+          - text: Config
+      - paragraph [ref=e33]: OpenClaw Dashboard
+    - main [ref=e34]:
+      - generic [ref=e35]:
+        - generic [ref=e36]:
+          - text: 🦞
+          - generic [ref=e37]:
+            - heading "OpenClaw Dashboard" [level=1] [ref=e38]
+            - paragraph [ref=e39]: Agent Network Monitor
+        - generic [ref=e42]: "Gateway: Disconnected"
+      - main [ref=e44]:
+        - generic [ref=e45]:
+          - generic [ref=e46]:
+            - generic [ref=e47]:
+              - heading "Agents" [level=1] [ref=e48]
+              - paragraph [ref=e49]: 0 agents configured
+            - button "+ Add Agent" [ref=e50]
+          - generic [ref=e51]: Loading agents...
+  - navigation [ref=e53]:
+    - link "Dashboard" [ref=e54] [cursor=pointer]:
+      - /url: /dashboard
+      - img [ref=e55]
+      - text: Dashboard
+    - link "Agents Map" [ref=e60] [cursor=pointer]:
+      - /url: /agents-map
+      - img [ref=e61]
+      - text: Agents Map
+    - link "Agents" [ref=e66] [cursor=pointer]:
+      - /url: /agents
+      - img [ref=e67]
+      - text: Agents
+    - link "Config" [ref=e72] [cursor=pointer]:
+      - /url: /config
+      - img [ref=e73]
+      - text: Config
+```

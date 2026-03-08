@@ -26,19 +26,19 @@ export function StringArrayEditor({ label, value, onChange }: StringArrayEditorP
 
   return (
     <div className="space-y-2">
-      <label className="text-sm text-slate-400">{label}</label>
+      <label className="text-sm text-gray-500 dark:text-slate-400">{label}</label>
       <div className="flex gap-2">
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
           placeholder="Add item..."
-          className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-indigo-500"
+          className="flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-sm text-gray-900 dark:text-white focus:outline-none focus:border-indigo-500"
         />
         <button
           type="button"
           onClick={add}
-          className="p-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 transition-colors"
+          className="p-1.5 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 rounded-lg text-gray-600 dark:text-slate-300 transition-colors"
         >
           <Plus className="w-4 h-4" />
         </button>
@@ -48,13 +48,13 @@ export function StringArrayEditor({ label, value, onChange }: StringArrayEditorP
           {value.map((item, i) => (
             <span
               key={`${item}-${i}`}
-              className="inline-flex items-center gap-1 bg-slate-800 text-slate-300 text-xs px-2 py-1 rounded-md border border-slate-700"
+              className="inline-flex items-center gap-1 bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 text-xs px-2 py-1 rounded-md border border-gray-200 dark:border-slate-700"
             >
               {item}
               <button
                 type="button"
                 onClick={() => remove(i)}
-                className="text-slate-500 hover:text-red-400 transition-colors"
+                className="text-gray-400 dark:text-slate-500 hover:text-red-400 transition-colors"
               >
                 <X className="w-3 h-3" />
               </button>

@@ -8,7 +8,7 @@ interface DirectoryPickerFieldProps {
   className?: string;
 }
 
-const INPUT_CLS = 'flex-1 bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500';
+const INPUT_CLS = 'flex-1 bg-gray-50 dark:bg-slate-800 border border-gray-300 dark:border-slate-700 text-gray-900 dark:text-slate-200 text-sm rounded-lg px-3 py-2 focus:outline-none focus:border-indigo-500';
 
 export function DirectoryPickerField({ value, onChange, placeholder, className }: DirectoryPickerFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -43,7 +43,7 @@ export function DirectoryPickerField({ value, onChange, placeholder, className }
       <button
         type='button'
         onClick={() => void handleBrowse()}
-        className='bg-slate-700 hover:bg-slate-600 border border-slate-600 text-slate-300 text-sm px-3 py-2 rounded-lg transition-colors flex-shrink-0'
+        className='bg-gray-100 dark:bg-slate-700 hover:bg-gray-200 dark:hover:bg-slate-600 border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 text-sm px-3 py-2 rounded-lg transition-colors flex-shrink-0'
       >
         Browse
       </button>
