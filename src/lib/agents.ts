@@ -203,42 +203,39 @@ export function getAgentsGraph(): AgentsGraph {
 }
 
 const AGENT_ACTIVITY_FILE = path.join(process.env.HOME ?? '/Users/manthis', '.openclaw', 'agent-activity.json');
-const ACTIVE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 
 export function getAgentsStatus(): Record<string, 'active' | 'idle'> {
   const result: Record<string, 'active' | 'idle'> = {};
   getAgents().forEach((a) => { result[a.id] = 'idle'; });
 
-  // 1. Read last-seen tracker (~/.openclaw/agent-activity.json)
+  // 1. Read activity tracker (~/.openclaw/agent-activity.json)
+  // Format: { "agentId": "active"|"idle" } — written directly by agents
   try {
     const raw = fs.readFileSync(AGENT_ACTIVITY_FILE, 'utf-8');
-    const activity = JSON.parse(raw) as Record<string, { lastSeen: number; status: string }>;
-    const now = Date.now();
-    for (const [agentId, entry] of Object.entries(activity)) {
-      if (now - entry.lastSeen < ACTIVE_THRESHOLD_MS) {
-        result[agentId] = 'active';
+    const activity = JSON.parse(raw) as Record<string, string>;
+    for (const [agentId, status] of Object.entries(activity)) {
+      if (status === 'active' || status === 'idle') {
+        result[agentId] = status;
       }
     }
   } catch {
     // File absent or unreadable — no activity data
   }
 
-  // 2. Merge with live openclaw sessions (hal9000 and any persistent agents)
+  // 2. Merge with live openclaw sessions (for hal9000)
   try {
-    const output = execFileSync('openclaw', ['sessions', '--active', '5', '--all-agents', '--json'], {
+    const output = execFileSync('openclaw', ['sessions', '--active', '--all-agents', '--json'], {
       timeout: 5000,
       encoding: 'utf-8',
     });
-    const data = JSON.parse(output) as { sessions?: Array<{ agentId: string; ageMs: number }> };
-    if (data.sessions) {
+    const data = JSON.parse(output) as { sessions?: Array<{ agentId: string }> };
+    if (data.sessions && data.sessions.length > 0) {
       data.sessions.forEach((s) => {
-        if (s.ageMs < ACTIVE_THRESHOLD_MS) {
-          result[s.agentId] = 'active';
-        }
+        result[s.agentId] = 'active';
       });
     }
   } catch {
-    // Fallback to idle if CLI unavailable
+    // Fallback to file-based status if CLI unavailable
   }
 
   return result;
