@@ -2,7 +2,6 @@
 import { useCallback, useState } from 'react';
 import {
   ReactFlow,
-  MiniMap,
   Controls,
   Background,
   BackgroundVariant,
@@ -87,7 +86,6 @@ export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: 
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#334155" />
         <Controls />
-        <MiniMap nodeColor="#6366f1" maskColor="rgba(15,23,42,0.8)" />
       </ReactFlow>
       <AnimatePresence>
         {selected && (
