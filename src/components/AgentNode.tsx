@@ -1,34 +1,42 @@
 'use client';
-import { memo } from 'react';
+
+import { useState } from 'react';
 import { Handle, Position } from '@xyflow/react';
-import { motion } from 'framer-motion';
-import { StatusBadge } from './StatusBadge';
+import type { NodeProps, Node } from '@xyflow/react';
 import type { Agent } from '@/types/agent';
+import { StatusBadge } from './StatusBadge';
 
-type AgentNodeData = Agent & Record<string, unknown>;
+export type AgentNodeData = Agent & Record<string, unknown>;
+export type AgentNodeType = Node<AgentNodeData, 'agentNode'>;
 
-export const AgentNode = memo(function AgentNode({
-  data,
-  selected,
-}: {
-  data: AgentNodeData;
-  selected?: boolean;
-}) {
+export function AgentNode({ data: agent }: NodeProps<AgentNodeType>) {
+  const [imgError, setImgError] = useState(false);
+  const showAvatar = agent.avatar !== null && !imgError;
+
   return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.8 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.3 }}
-      className={`px-4 py-3 rounded-xl border min-w-[140px] cursor-pointer transition-all duration-200 ${selected ? 'bg-slate-700 border-blue-500 shadow-lg shadow-blue-500/20' : 'bg-slate-800 border-slate-600 hover:border-slate-400'}`}
-    >
-      <Handle type="target" position={Position.Top} className="w-3 h-3 !bg-slate-500 !border-slate-400" />
-      <div className="flex flex-col items-center gap-1.5">
-        <span className="text-2xl">{data.emoji}</span>
-        <span className="text-white text-sm font-semibold">{data.name}</span>
-        <span className="text-slate-400 text-xs font-mono">{data.id}</span>
-        <StatusBadge status={data.status} />
+    <div className="flex flex-col items-center gap-2 p-3 rounded-xl bg-neutral-900 border border-neutral-700 shadow-lg w-[120px] min-h-[100px] cursor-pointer select-none transition-all duration-200 hover:border-neutral-500 hover:shadow-xl">
+      <Handle type="target" position={Position.Top} className="!bg-neutral-500" />
+
+      <div className="w-14 h-14 rounded-full overflow-hidden flex items-center justify-center bg-neutral-800 border border-neutral-600 shrink-0">
+        {showAvatar ? (
+          <img
+            src={`/api/agents/${agent.id}/avatar`}
+            alt={agent.name}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <span className="text-3xl leading-none">{agent.emoji}</span>
+        )}
       </div>
-      <Handle type="source" position={Position.Bottom} className="w-3 h-3 !bg-slate-500 !border-slate-400" />
-    </motion.div>
+
+      <span className="text-xs font-semibold text-neutral-100 text-center leading-tight max-w-full truncate px-1">
+        {agent.name}
+      </span>
+
+      <StatusBadge status={agent.status} />
+
+      <Handle type="source" position={Position.Bottom} className="!bg-neutral-500" />
+    </div>
   );
-});
+}

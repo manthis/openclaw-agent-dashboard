@@ -1,9 +1,30 @@
 "use client";
+import Image from 'next/image';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { StatusBadge } from './StatusBadge';
 import type { Agent } from '@/types/agent';
+
+function AgentAvatar({ agent }: { agent: Agent }) {
+  const [imgError, setImgError] = useState(false);
+  if (agent.avatar && !imgError) {
+    return (
+      <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-slate-700 flex-shrink-0">
+        <Image
+          src={`/api/agents/${agent.id}/avatar`}
+          alt={agent.name}
+          width={48}
+          height={48}
+          className="object-cover w-full h-full"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+  return <span className="text-3xl" data-testid="agent-emoji">{agent.emoji}</span>;
+}
 
 export function AgentCard({ agent, onClose }: { agent: Agent; onClose?: () => void }) {
   return (
@@ -12,7 +33,7 @@ export function AgentCard({ agent, onClose }: { agent: Agent; onClose?: () => vo
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="text-3xl" data-testid="agent-emoji">{agent.emoji}</span>
+              <AgentAvatar agent={agent} />
               <div>
                 <CardTitle className="text-white text-lg" data-testid="agent-name">{agent.name}</CardTitle>
                 <p className="text-slate-400 text-xs font-mono">{agent.id}</p>

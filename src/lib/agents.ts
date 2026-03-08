@@ -1,4 +1,5 @@
 import { readOpenClawConfig, fileExists } from './config';
+import fs from 'fs';
 import * as path from 'path';
 import type { Agent, AgentRelation, AgentsGraph } from '@/types/agent';
 
@@ -24,6 +25,16 @@ interface RawAgent {
   };
 }
 
+const OPENCLAW_CONFIG = path.join(process.env.HOME ?? '/Users/manthis', '.openclaw', 'openclaw.json');
+
+function readRawConfig(): { agents?: { list?: RawAgent[] } } {
+  try { return JSON.parse(fs.readFileSync(OPENCLAW_CONFIG, 'utf-8')); } catch { return {}; }
+}
+
+function writeRawConfig(config: unknown): void {
+  fs.writeFileSync(OPENCLAW_CONFIG, JSON.stringify(config, null, 2), 'utf-8');
+}
+
 function buildAgent(raw: RawAgent): Agent {
   const ws = raw.workspace ?? '';
   return {
@@ -40,6 +51,9 @@ function buildAgent(raw: RawAgent): Agent {
       identity: ws ? fileExists(path.join(ws, 'IDENTITY.md')) : false,
       tools: ws ? fileExists(path.join(ws, 'TOOLS.md')) : false,
       memory: ws ? fileExists(path.join(ws, 'MEMORY.md')) : false,
+      user: ws ? fileExists(path.join(ws, 'USER.md')) : false,
+      agents: ws ? fileExists(path.join(ws, 'AGENTS.md')) : false,
+      heartbeat: ws ? fileExists(path.join(ws, 'HEARTBEAT.md')) : false,
     },
     relations: STATIC_RELATIONS
       .filter((r) => r.source === raw.id)
@@ -57,6 +71,34 @@ export function getAgents(): Agent[] {
 
 export function getAgent(id: string): Agent | null {
   return getAgents().find((a) => a.id === id) ?? null;
+}
+
+export function updateAgent(id: string, patch: Partial<{ name: string; emoji: string; theme: string; avatar: string; model: string; workspace: string }>): Agent | null {
+  const config = readRawConfig();
+  const list = config.agents?.list;
+  if (!list) return null;
+  const idx = list.findIndex((a: RawAgent) => a.id === id);
+  if (idx === -1) return null;
+  const raw = list[idx];
+  if (patch.name !== undefined) raw.identity.name = patch.name;
+  if (patch.emoji !== undefined) raw.identity.emoji = patch.emoji;
+  if (patch.theme !== undefined) raw.identity.theme = patch.theme;
+  if (patch.avatar !== undefined) raw.identity.avatar = patch.avatar;
+  if (patch.model !== undefined) raw.model = { ...(raw.model ?? {}), primary: patch.model };
+  if (patch.workspace !== undefined) raw.workspace = patch.workspace;
+  writeRawConfig(config);
+  return buildAgent(raw);
+}
+
+export function deleteAgent(id: string): boolean {
+  const config = readRawConfig();
+  const list = config.agents?.list;
+  if (!list) return false;
+  const idx = list.findIndex((a: RawAgent) => a.id === id);
+  if (idx === -1) return false;
+  list.splice(idx, 1);
+  writeRawConfig(config);
+  return true;
 }
 
 export function getAgentsGraph(): AgentsGraph {

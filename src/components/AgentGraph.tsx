@@ -8,19 +8,15 @@ import {
   BackgroundVariant,
   useNodesState,
   useEdgesState,
-  type Node,
   type Edge,
   type OnConnect,
   addEdge,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import { AnimatePresence } from 'framer-motion';
-import { AgentNode } from './AgentNode';
+import { AgentNode, type AgentNodeType } from './AgentNode';
 import { AgentCard } from './AgentCard';
 import type { Agent, AgentRelation } from '@/types/agent';
-
-type AgentNodeData = Agent & Record<string, unknown>;
-type AgentFlowNode = Node<AgentNodeData>;
 
 const nodeTypes = { agentNode: AgentNode };
 
@@ -35,12 +31,12 @@ const POSITIONS: Record<string, { x: number; y: number }> = {
   skynet: { x: 700, y: 330 },
 };
 
-function buildNodes(agents: Agent[]): AgentFlowNode[] {
+function buildNodes(agents: Agent[]): AgentNodeType[] {
   return agents.map((a) => ({
     id: a.id,
-    type: 'agentNode',
+    type: 'agentNode' as const,
     position: POSITIONS[a.id] ?? { x: Math.random() * 700, y: 400 },
-    data: a as AgentNodeData,
+    data: a as AgentNodeType['data'],
   }));
 }
 
@@ -58,7 +54,7 @@ function buildEdges(relations: AgentRelation[]): Edge[] {
 }
 
 export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: AgentRelation[] }) {
-  const [nodes, , onNodesChange] = useNodesState<AgentFlowNode>(buildNodes(agents));
+  const [nodes, , onNodesChange] = useNodesState<AgentNodeType>(buildNodes(agents));
   const [edges, setEdges, onEdgesChange] = useEdgesState(buildEdges(relations));
   const [selected, setSelected] = useState<Agent | null>(null);
 
@@ -68,7 +64,7 @@ export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: 
   );
 
   const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: AgentFlowNode) => {
+    (_: React.MouseEvent, node: AgentNodeType) => {
       setSelected(agents.find((a) => a.id === node.id) ?? null);
     },
     [agents]
@@ -85,6 +81,9 @@ export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: 
         onNodeClick={onNodeClick}
         nodeTypes={nodeTypes}
         fitView
+        fitViewOptions={{ padding: 0.3 }}
+        minZoom={0.3}
+        defaultViewport={{ x: 0, y: 0, zoom: 0.75 }}
         colorMode="dark"
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#334155" />

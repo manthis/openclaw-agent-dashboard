@@ -14,6 +14,9 @@ export interface Agent {
     identity: boolean;
     tools: boolean;
     memory: boolean;
+    user: boolean;
+    agents: boolean;
+    heartbeat: boolean;
   };
   relations: string[];
 }
