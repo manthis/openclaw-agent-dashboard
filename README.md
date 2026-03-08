@@ -16,7 +16,8 @@ A beautiful, real-time dashboard for monitoring and managing your [OpenClaw](htt
 
 ## ✨ Features
 
-- 🔮 **Interactive Agent Graph** — ReactFlow visualization of all agents and their relationships, with zoom/pan and a minimap
+- 🔮 **Interactive Agent Graph** — ReactFlow visualization of all agents and their relationships, with zoom/pan and generous node spacing for clarity
+- 🌐 **Gateway Status Indicator** — Live "Gateway: Connected / Disconnected" badge in the header, polling the OpenClaw gateway in real time
 - 🗂️ **Sidebar Navigation** — Persistent sidebar with Dashboard, Agents, and Config pages
 - 👤 **Agent Avatars** — Custom avatar images per agent, fallback to emoji
 - 📋 **Agent Cards** — Click any node to inspect: name, emoji, model, status, workspace, and workspace file viewer
@@ -33,33 +34,52 @@ A beautiful, real-time dashboard for monitoring and managing your [OpenClaw](htt
 - 🎞️ **Smooth Animations** — Framer Motion transitions for cards and panels
 - 🗑️ **Delete Agents** — Remove agents with confirmation
 - 📝 **Inline File Editing** — Edit workspace markdown files directly from the dashboard
+- 🏠 **LAN Accessible** — Runs on port 9000, accessible from any device on your local network
+
+---
+
+## 🆕 Recent Changes
+
+### Gateway Status Indicator
+The top header now displays a live **Gateway: Connected** (green) or **Gateway: Disconnected** (red) badge. It polls the OpenClaw gateway endpoint every few seconds and updates automatically — no manual refresh needed.
+
+### MiniMap Removed
+The ReactFlow MiniMap has been removed to maximize the graph viewport on all screen sizes. Navigation is handled by the built-in zoom/pan controls and the `fitView` behavior on load.
+
+### Graph Spacing & Zoom Improvements
+- Node spacing significantly increased: horizontal separation ~320px, vertical ~160–240px
+- `fitView` with `padding: 0.6` ensures the full graph is visible on load
+- `minZoom: 0.3` prevents over-zooming out on large graphs
+- All agent cards are comfortably readable without overlapping
+
+### LAN Accessibility
+The dashboard is served on **port 9000** and listens on all interfaces. Access it from any machine on your local network:
+```
+http://<your-machine-ip>:9000
+```
+Example: `http://10.0.10.22:9000`
 
 ---
 
 ## 🖥️ Screenshots
 
 ### Dashboard principal
-![Dashboard](public/screenshots/dashboard-main.png)
 
-> Vue principale : sidebar + graphe ReactFlow interactif de la hiérarchie des agents.
+> Vue principale : sidebar + graphe ReactFlow interactif de la hiérarchie des agents. Les nœuds sont bien espacés, tout le graphe est visible au chargement. L'indicateur **Gateway: Connected** est visible dans le header en haut à gauche.
 
 ### AgentCard avec avatar
-![Agent Card](public/screenshots/dashboard-agent-card.png)
 
 > Cliquer sur un nœud affiche la carte de l'agent avec son avatar, son modèle, son statut et ses fichiers workspace.
 
 ### Page Agents — liste
-![Agents List](public/screenshots/agents-list.png)
 
 > `/agents` affiche tous les agents avec leur statut, emoji, modèle et actions.
 
 ### Page Agents — panneau d'édition
-![Agents Edit](public/screenshots/agents-edit.png)
 
 > Panneau d'édition complet : emoji picker, model combobox, directory picker, et éditeur de fichiers markdown intégré.
 
 ### Page Config
-![Config](public/screenshots/config.png)
 
 > `/config` expose tous les paramètres OpenClaw : clé/valeur, tableaux, maps dynamiques, mots de passe.
 
@@ -77,6 +97,15 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000)
 
 > **Requirements:** OpenClaw installed and configured at `~/.openclaw/openclaw.json`
+
+### Production (port 9000)
+
+```bash
+npm run build
+npm start   # binds to 0.0.0.0:9000 — accessible on LAN
+```
+
+Or via the LaunchAgent `io.manthis.openclaw-agent-dashboard` (auto-starts on login).
 
 ---
 
@@ -107,9 +136,9 @@ src/
 │           └── route.ts               # GET /api/models
 ├── components/
 │   ├── Sidebar.tsx                     # Navigation sidebar (Dashboard / Agents / Config)
-│   ├── Header.tsx                      # Top bar
+│   ├── Header.tsx                      # Top bar with Gateway status indicator
 │   ├── DashboardClient.tsx             # Client wrapper for dashboard
-│   ├── AgentGraph.tsx                  # ReactFlow graph (SSR-safe)
+│   ├── AgentGraph.tsx                  # ReactFlow graph (SSR-safe, no MiniMap)
 │   ├── AgentNode.tsx                   # Custom ReactFlow node with avatar
 │   ├── AgentCard.tsx                   # Agent detail panel (dashboard)
 │   ├── AgentsPageClient.tsx            # Agents list + edit panel

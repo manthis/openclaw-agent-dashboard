@@ -19,15 +19,16 @@ import type { Agent, AgentRelation } from '@/types/agent';
 
 const nodeTypes = { agentNode: AgentNode };
 
+// Positions with increased spacing (nodeSep ~320, rankSep ~160)
 const POSITIONS: Record<string, { x: number; y: number }> = {
-  hal9000: { x: 550, y: 0 },
-  mother: { x: 550, y: 120 },
-  data: { x: 0, y: 320 },
-  atlas: { x: 280, y: 320 },
-  prometheus: { x: 560, y: 320 },
-  tars: { x: 840, y: 320 },
-  ash: { x: 1120, y: 320 },
-  skynet: { x: 1400, y: 320 },
+  hal9000:    { x: 640, y: 0   },
+  mother:     { x: 640, y: 160 },
+  data:       { x: 0,   y: 400 },
+  atlas:      { x: 320, y: 400 },
+  prometheus: { x: 640, y: 400 },
+  tars:       { x: 960, y: 400 },
+  ash:        { x: 1280, y: 400 },
+  skynet:     { x: 1600, y: 400 },
 };
 
 function buildNodes(agents: Agent[]): AgentNodeType[] {
@@ -81,7 +82,7 @@ export function AgentGraph({ agents, relations }: { agents: Agent[]; relations: 
         nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{ padding: 0.6 }}
-        minZoom={0.2}
+        minZoom={0.3}
         colorMode="dark"
       >
         <Background variant={BackgroundVariant.Dots} gap={24} size={1} color="#334155" />
