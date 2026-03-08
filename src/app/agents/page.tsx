@@ -1,9 +1,8 @@
-import { getAgents } from "@/lib/agents";
-import { AgentsClient } from "@/components/AgentsClient";
+import { AgentsPageClient } from '@/components/AgentsPageClient';
 
-export const dynamic = "force-dynamic";
+export const metadata = { title: 'Agents \u2014 OpenClaw Dashboard' };
+export const dynamic = 'force-dynamic';
 
-export default async function AgentsPage() {
-  const agents = await getAgents();
-  return <AgentsClient initialAgents={agents} />;
+export default function AgentsPage() {
+  return <AgentsPageClient />;
 }
