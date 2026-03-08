@@ -3,6 +3,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import type { Agent } from '@/types/agent';
 import { StatusBadge } from './StatusBadge';
+import { Switch } from './ui/switch';
+import { EmojiPickerField } from './agents/EmojiPickerField';
+import { ModelComboBox } from './agents/ModelComboBox';
+import { ModelMultiSelect } from './agents/ModelMultiSelect';
+import { DirectoryPickerField } from './agents/DirectoryPickerField';
+import { AgentMultiSelect } from './agents/AgentMultiSelect';
 
 const WORKSPACE_FILES = ['SOUL', 'IDENTITY', 'TOOLS', 'MEMORY', 'USER', 'AGENTS', 'HEARTBEAT'] as const;
 type WorkspaceFile = typeof WORKSPACE_FILES[number];
@@ -100,9 +106,10 @@ function SectionPanel({
 }
 
 function AgentEditPanel({
-  agent, onClose, onUpdated, onDeleted,
+  agent, agents, onClose, onUpdated, onDeleted,
 }: {
   agent: Agent;
+  agents: Agent[];
   onClose: () => void;
   onUpdated: (a: Agent) => void;
   onDeleted: (id: string) => void;
@@ -112,6 +119,7 @@ function AgentEditPanel({
     emoji: agent.emoji,
     theme: agent.theme ?? '',
     avatar: agent.avatar ?? '',
+    workspace: agent.workspace ?? '',
   });
   const [modelFields, setModelFields] = useState({
     model: agent.model,
@@ -138,7 +146,7 @@ function AgentEditPanel({
   });
 
   const initRef = useRef({
-    identity: { name: agent.name, emoji: agent.emoji, theme: agent.theme ?? '', avatar: agent.avatar ?? '' },
+    identity: { name: agent.name, emoji: agent.emoji, theme: agent.theme ?? '', avatar: agent.avatar ?? '', workspace: agent.workspace ?? '' },
     modelFields: { model: agent.model, modelFallbacks: agent.modelFallbacks ?? [], isDefault: agent.default ?? false },
     toolsFields: { toolsProfile: agent.toolsProfile ?? '', toolsAllow: agent.toolsAllow ?? [], toolsDeny: agent.toolsDeny ?? [], skills: agent.skills ?? [] },
     sandboxFields: { sandboxMode: agent.sandboxMode ?? '' },
@@ -232,6 +240,9 @@ function AgentEditPanel({
 
   const toggleSection = (s: SectionId) => setOpenSections((o) => ({ ...o, [s]: !o[s] }));
 
+  // Other agents for subagent multi-select (exclude self)
+  const otherAgents = agents.filter((a) => a.id !== agent.id);
+
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
       <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto' onClick={(e) => e.stopPropagation()}>
@@ -252,22 +263,45 @@ function AgentEditPanel({
           </div>
         </div>
 
-        <SectionPanel title='Identity' dirty={dirty.identity} open={openSections.identity} onToggle={() => toggleSection('identity')} onSave={() => void saveSection('identity', { name: identity.name, emoji: identity.emoji, theme: identity.theme, avatar: identity.avatar || null })} saving={saving.identity}>
+        {/* IDENTITY */}
+        <SectionPanel title='Identity' dirty={dirty.identity} open={openSections.identity} onToggle={() => toggleSection('identity')} onSave={() => void saveSection('identity', { name: identity.name, emoji: identity.emoji, theme: identity.theme, avatar: identity.avatar || null, workspace: identity.workspace || undefined })} saving={saving.identity}>
           <div><label className={LABEL_CLS}>Name</label><input className={INPUT_CLS} value={identity.name} onChange={(e) => setIdentity((p) => ({ ...p, name: e.target.value }))} /></div>
-          <div><label className={LABEL_CLS}>Emoji</label><input className={INPUT_CLS} value={identity.emoji} onChange={(e) => setIdentity((p) => ({ ...p, emoji: e.target.value }))} /></div>
+          <div>
+            <label className={LABEL_CLS}>Emoji</label>
+            <div className='flex items-center gap-3'>
+              <EmojiPickerField value={identity.emoji} onChange={(emoji) => setIdentity((p) => ({ ...p, emoji }))} />
+              <span className='text-slate-500 text-xs'>Click to open emoji picker</span>
+            </div>
+          </div>
           <div><label className={LABEL_CLS}>Theme</label><input className={INPUT_CLS} value={identity.theme} onChange={(e) => setIdentity((p) => ({ ...p, theme: e.target.value }))} /></div>
           <div><label className={LABEL_CLS}>Avatar (filename)</label><input className={INPUT_CLS} value={identity.avatar} onChange={(e) => setIdentity((p) => ({ ...p, avatar: e.target.value }))} placeholder='agent.png' /></div>
-        </SectionPanel>
-
-        <SectionPanel title='Model' dirty={dirty.model} open={openSections.model} onToggle={() => toggleSection('model')} onSave={() => void saveSection('model', { model: modelFields.model, modelFallbacks: modelFields.modelFallbacks, default: modelFields.isDefault })} saving={saving.model}>
-          <div><label className={LABEL_CLS}>Model</label><input className={INPUT_CLS} value={modelFields.model} onChange={(e) => setModelFields((p) => ({ ...p, model: e.target.value }))} placeholder='anthropic/claude-sonnet-4' /></div>
-          <div><label className={LABEL_CLS}>Model Fallbacks (Enter to add)</label><TagsInput tags={modelFields.modelFallbacks} onChange={(t) => setModelFields((p) => ({ ...p, modelFallbacks: t }))} placeholder='model-name' /></div>
-          <div className='flex items-center gap-2'>
-            <input type='checkbox' id='editDefault' checked={modelFields.isDefault} onChange={(e) => setModelFields((p) => ({ ...p, isDefault: e.target.checked }))} className='accent-indigo-500' />
-            <label htmlFor='editDefault' className='text-slate-400 text-sm'>Default agent</label>
+          <div>
+            <label className={LABEL_CLS}>Workspace directory</label>
+            <DirectoryPickerField value={identity.workspace} onChange={(workspace) => setIdentity((p) => ({ ...p, workspace }))} placeholder='/Users/me/.openclaw/workspace/agent' />
           </div>
         </SectionPanel>
 
+        {/* MODEL */}
+        <SectionPanel title='Model' dirty={dirty.model} open={openSections.model} onToggle={() => toggleSection('model')} onSave={() => void saveSection('model', { model: modelFields.model, modelFallbacks: modelFields.modelFallbacks, default: modelFields.isDefault })} saving={saving.model}>
+          <div>
+            <label className={LABEL_CLS}>Primary model</label>
+            <ModelComboBox value={modelFields.model} onChange={(model) => setModelFields((p) => ({ ...p, model }))} />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Fallback models</label>
+            <ModelMultiSelect values={modelFields.modelFallbacks} onChange={(modelFallbacks) => setModelFields((p) => ({ ...p, modelFallbacks }))} />
+          </div>
+          <div className='flex items-center gap-3'>
+            <Switch
+              id='editDefault'
+              checked={modelFields.isDefault}
+              onCheckedChange={(checked) => setModelFields((p) => ({ ...p, isDefault: checked }))}
+            />
+            <label htmlFor='editDefault' className='text-slate-400 text-sm cursor-pointer'>Default agent</label>
+          </div>
+        </SectionPanel>
+
+        {/* TOOLS */}
         <SectionPanel title='Tools & Skills' dirty={dirty.tools} open={openSections.tools} onToggle={() => toggleSection('tools')} onSave={() => void saveSection('tools', { toolsProfile: toolsFields.toolsProfile || undefined, toolsAllow: toolsFields.toolsAllow, toolsDeny: toolsFields.toolsDeny, skills: toolsFields.skills })} saving={saving.tools}>
           <div><label className={LABEL_CLS}>Tools Profile</label>
             <select className={SELECT_CLS} value={toolsFields.toolsProfile} onChange={(e) => setToolsFields((p) => ({ ...p, toolsProfile: e.target.value }))}>
@@ -283,6 +317,7 @@ function AgentEditPanel({
           <div><label className={LABEL_CLS}>Skills (Enter to add)</label><TagsInput tags={toolsFields.skills} onChange={(t) => setToolsFields((p) => ({ ...p, skills: t }))} placeholder='skill-name' /></div>
         </SectionPanel>
 
+        {/* SANDBOX */}
         <SectionPanel title='Sandbox' dirty={dirty.sandbox} open={openSections.sandbox} onToggle={() => toggleSection('sandbox')} onSave={() => void saveSection('sandbox', { sandboxMode: sandboxFields.sandboxMode || undefined })} saving={saving.sandbox}>
           <div><label className={LABEL_CLS}>Sandbox Mode</label>
             <select className={SELECT_CLS} value={sandboxFields.sandboxMode} onChange={(e) => setSandboxFields((p) => ({ ...p, sandboxMode: e.target.value }))}>
@@ -294,6 +329,7 @@ function AgentEditPanel({
           </div>
         </SectionPanel>
 
+        {/* HEARTBEAT */}
         <SectionPanel title='Heartbeat' dirty={dirty.heartbeat} open={openSections.heartbeat} onToggle={() => toggleSection('heartbeat')} onSave={() => void saveSection('heartbeat', { heartbeatEvery: heartbeatFields.heartbeatEvery || undefined, heartbeatTarget: heartbeatFields.heartbeatTarget || undefined, heartbeatModel: heartbeatFields.heartbeatModel || undefined, heartbeatPrompt: heartbeatFields.heartbeatPrompt || undefined })} saving={saving.heartbeat}>
           <div className='grid grid-cols-2 gap-3'>
             <div><label className={LABEL_CLS}>Every (e.g. 30m)</label><input className={INPUT_CLS} value={heartbeatFields.heartbeatEvery} onChange={(e) => setHeartbeatFields((p) => ({ ...p, heartbeatEvery: e.target.value }))} placeholder='30m' /></div>
@@ -309,14 +345,26 @@ function AgentEditPanel({
               </select>
             </div>
           </div>
-          <div><label className={LABEL_CLS}>Heartbeat Model</label><input className={INPUT_CLS} value={heartbeatFields.heartbeatModel} onChange={(e) => setHeartbeatFields((p) => ({ ...p, heartbeatModel: e.target.value }))} placeholder='optional model override' /></div>
+          <div>
+            <label className={LABEL_CLS}>Heartbeat Model</label>
+            <ModelComboBox value={heartbeatFields.heartbeatModel} onChange={(heartbeatModel) => setHeartbeatFields((p) => ({ ...p, heartbeatModel }))} placeholder='optional model override' />
+          </div>
           <div><label className={LABEL_CLS}>Heartbeat Prompt</label><textarea className={INPUT_CLS + ' h-20 resize-y'} value={heartbeatFields.heartbeatPrompt} onChange={(e) => setHeartbeatFields((p) => ({ ...p, heartbeatPrompt: e.target.value }))} placeholder='Custom heartbeat prompt...' /></div>
         </SectionPanel>
 
+        {/* SUB-AGENTS */}
         <SectionPanel title='Sub-agents' dirty={dirty.subagents} open={openSections.subagents} onToggle={() => toggleSection('subagents')} onSave={() => void saveSection('subagents', { subagentsAllowAgents: subagentsFields.subagentsAllowAgents })} saving={saving.subagents}>
-          <div><label className={LABEL_CLS}>Allow Agents (Enter to add, * for all)</label><TagsInput tags={subagentsFields.subagentsAllowAgents} onChange={(t) => setSubagentsFields((p) => ({ ...p, subagentsAllowAgents: t }))} placeholder='agent-id or *' /></div>
+          <div>
+            <label className={LABEL_CLS}>Allow Agents (* for all)</label>
+            <AgentMultiSelect
+              values={subagentsFields.subagentsAllowAgents}
+              onChange={(subagentsAllowAgents) => setSubagentsFields((p) => ({ ...p, subagentsAllowAgents }))}
+              agents={otherAgents}
+            />
+          </div>
         </SectionPanel>
 
+        {/* WORKSPACE FILES */}
         <div className='px-6 pb-6 border-t border-slate-700/50 pt-4'>
           <h3 className='text-slate-400 text-xs uppercase tracking-wider mb-3'>Workspace Files</h3>
           <div className='flex flex-wrap gap-1 mb-3'>
@@ -334,8 +382,8 @@ function AgentEditPanel({
   );
 }
 
-function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const [form, setForm] = useState({ id: '', name: '', emoji: '', model: '', workspace: '' });
+function AddAgentModal({ agents, onClose, onCreated }: { agents: Agent[]; onClose: () => void; onCreated: () => void }) {
+  const [form, setForm] = useState({ id: '', name: '', emoji: '🤖', model: '', workspace: '' });
   const [toolsProfile, setToolsProfile] = useState('');
   const [sandboxMode, setSandboxMode] = useState('');
   const [isDefault, setIsDefault] = useState(false);
@@ -369,6 +417,9 @@ function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated:
     setSaving(false);
   };
 
+  // Suppress unused agents warning — used in future multi-select
+  void agents;
+
   return (
     <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
       <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto' onClick={(e) => e.stopPropagation()}>
@@ -380,9 +431,21 @@ function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated:
           {error && <div className='text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-3 py-2'>{error}</div>}
           <div><label className={LABEL_CLS}>ID (required)</label><input className={INPUT_CLS} value={form.id} onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))} placeholder='my-agent' /></div>
           <div><label className={LABEL_CLS}>Name (required)</label><input className={INPUT_CLS} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder='My Agent' /></div>
-          <div><label className={LABEL_CLS}>Emoji</label><input className={INPUT_CLS} value={form.emoji} onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))} placeholder='🤖' /></div>
-          <div><label className={LABEL_CLS}>Model</label><input className={INPUT_CLS} value={form.model} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))} placeholder='claude-sonnet-4-20250514' /></div>
-          <div><label className={LABEL_CLS}>Workspace</label><input className={INPUT_CLS} value={form.workspace} onChange={(e) => setForm((f) => ({ ...f, workspace: e.target.value }))} placeholder='/path/to/workspace' /></div>
+          <div>
+            <label className={LABEL_CLS}>Emoji</label>
+            <div className='flex items-center gap-3'>
+              <EmojiPickerField value={form.emoji} onChange={(emoji) => setForm((f) => ({ ...f, emoji }))} />
+              <span className='text-slate-500 text-xs'>Click to pick</span>
+            </div>
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Model</label>
+            <ModelComboBox value={form.model} onChange={(model) => setForm((f) => ({ ...f, model }))} placeholder='anthropic/claude-sonnet-4-6' />
+          </div>
+          <div>
+            <label className={LABEL_CLS}>Workspace</label>
+            <DirectoryPickerField value={form.workspace} onChange={(workspace) => setForm((f) => ({ ...f, workspace }))} placeholder='/path/to/workspace' />
+          </div>
           <div><label className={LABEL_CLS}>Tools Profile</label>
             <select className={SELECT_CLS} value={toolsProfile} onChange={(e) => setToolsProfile(e.target.value)}>
               <option value=''>— none —</option>
@@ -400,9 +463,9 @@ function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated:
               <option value='all'>all</option>
             </select>
           </div>
-          <div className='flex items-center gap-2'>
-            <input type='checkbox' id='addDefault' checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className='accent-indigo-500' />
-            <label htmlFor='addDefault' className='text-slate-400 text-sm'>Default agent</label>
+          <div className='flex items-center gap-3'>
+            <Switch id='addDefault' checked={isDefault} onCheckedChange={setIsDefault} />
+            <label htmlFor='addDefault' className='text-slate-400 text-sm cursor-pointer'>Default agent</label>
           </div>
         </div>
         <div className='px-6 py-4 border-t border-slate-700'>
@@ -471,8 +534,8 @@ export function AgentsPageClient() {
           </div>
         )}
       </div>
-      {selected && <AgentEditPanel agent={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} onDeleted={handleDeleted} />}
-      {showAdd && <AddAgentModal onClose={() => setShowAdd(false)} onCreated={loadAgents} />}
+      {selected && <AgentEditPanel agent={selected} agents={agents} onClose={() => setSelected(null)} onUpdated={handleUpdated} onDeleted={handleDeleted} />}
+      {showAdd && <AddAgentModal agents={agents} onClose={() => setShowAdd(false)} onCreated={loadAgents} />}
     </main>
   );
 }
