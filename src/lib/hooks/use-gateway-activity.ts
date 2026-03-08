@@ -17,9 +17,7 @@ type GatewayFrame =
 
 const WS_URL =
   process.env.NEXT_PUBLIC_GATEWAY_WS_URL || "ws://10.0.10.22:18789";
-const TOKEN =
-  process.env.NEXT_PUBLIC_GATEWAY_TOKEN ||
-  "";
+const TOKEN = process.env.NEXT_PUBLIC_GATEWAY_TOKEN || "";
 
 function makeSummary(type: string, data: unknown): string {
   const d = data as Record<string, unknown> | null;
@@ -42,7 +40,6 @@ function makeSummary(type: string, data: unknown): string {
 }
 
 function uuid(): string {
-  // good-enough client id (no crypto dependency)
   return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
@@ -58,7 +55,7 @@ export function useGatewayActivity() {
   const connectReqIdRef = useRef<string | null>(null);
   const connectSentRef = useRef(false);
 
-  const sendConnect = useCallback((nonce: string | null) => {
+  const sendConnect = useCallback(() => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     if (connectSentRef.current) return;
@@ -67,28 +64,26 @@ export function useGatewayActivity() {
     const reqId = uuid();
     connectReqIdRef.current = reqId;
 
-    // Minimal gateway "connect" request.
-    // Device auth is currently disabled on the gateway (break-glass), so we omit
-    // `device` signing and just provide the gateway token.
+    // Match the Control UI handshake shape as closely as possible.
+    // Note: control-ui device auth is disabled on this gateway config, so we omit `device`.
     const params = {
       minProtocol: 3,
       maxProtocol: 3,
       client: {
-        id: "openclaw-agent-dashboard",
+        // Use the canonical id so the gateway treats it like a UI client.
+        id: "openclaw-control-ui",
         version: "dev",
         platform: typeof navigator !== "undefined" ? navigator.platform : "web",
-        mode: "ui",
+        // Control UI uses mode "webchat" for historical reasons.
+        mode: "webchat",
         instanceId: uuid(),
       },
       role: "operator",
-      scopes: ["operator.admin"],
+      scopes: ["operator.admin", "operator.approvals", "operator.pairing"],
       caps: [],
       auth: TOKEN ? { token: TOKEN } : undefined,
       userAgent: typeof navigator !== "undefined" ? navigator.userAgent : "",
       locale: typeof navigator !== "undefined" ? navigator.language : "en",
-      // nonce is carried via the challenge event + device signing in the full protocol.
-      // We keep it here for traceability even if device auth is disabled.
-      nonce: nonce || undefined,
     };
 
     const frame: GatewayFrame = { type: "req", id: reqId, method: "connect", params };
@@ -99,7 +94,6 @@ export function useGatewayActivity() {
     if (!mountedRef.current) return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
 
-    // reset handshake state
     connectReqIdRef.current = null;
     connectSentRef.current = false;
 
@@ -109,9 +103,9 @@ export function useGatewayActivity() {
 
       ws.onopen = () => {
         if (!mountedRef.current) return;
-        // wait for connect.challenge; if it doesn't arrive, we'll still attempt
-        // connect after a short delay.
-        window.setTimeout(() => sendConnect(null), 750);
+        // gateway may emit connect.challenge, but we don't depend on it when
+        // device auth is disabled.
+        window.setTimeout(() => sendConnect(), 750);
       };
 
       ws.onmessage = (event) => {
@@ -120,14 +114,9 @@ export function useGatewayActivity() {
           const msg = JSON.parse(event.data) as GatewayFrame;
 
           if (msg.type === "event") {
-            // Handshake challenge
-            if (msg.event === "connect.challenge") {
-              const nonce = (msg.payload as { nonce?: unknown } | undefined)?.nonce;
-              sendConnect(typeof nonce === "string" ? nonce : null);
-              return;
-            }
+            // ignore handshake challenge frames (we're token-only)
+            if (msg.event === "connect.challenge") return;
 
-            // Normal gateway events
             const ge: GatewayEvent = {
               id: uuid(),
               type: msg.event || "event",
@@ -147,8 +136,6 @@ export function useGatewayActivity() {
               setConnected(Boolean(msg.ok));
               return;
             }
-
-            return;
           }
         } catch {
           /* ignore */
