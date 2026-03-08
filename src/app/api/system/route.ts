@@ -1,17 +1,9 @@
 import { NextResponse } from 'next/server';
 import os from 'os';
 import { execSync } from 'child_process';
+import { getSystemSnapshot } from '@/lib/systemSnapshot';
 
 const GATEWAY_URL = process.env.OPENCLAW_GATEWAY_URL || 'http://127.0.0.1:18789';
-
-type SessionsJson =
-  | unknown[]
-  | {
-      sessions?: unknown[];
-      count?: number;
-      activeMinutes?: number;
-      path?: string;
-    };
 
 export async function GET() {
   // “Connected” should reflect that the OpenClaw gateway is not only reachable,
@@ -32,39 +24,21 @@ export async function GET() {
 
   let sessions = 0;
   try {
-    const output = execSync('openclaw sessions --active 5 --json 2>/dev/null || echo "{}"', { timeout: 5000 }).toString();
-    const parsed = JSON.parse(output.trim()) as SessionsJson;
-
-    if (Array.isArray(parsed)) {
-      sessions = parsed.length;
-    } else if (parsed && typeof parsed === 'object') {
-      const s = Array.isArray((parsed as any).sessions) ? ((parsed as any).sessions as unknown[]) : null;
-      const c = typeof (parsed as any).count === 'number' ? (parsed as any).count : null;
-      sessions = s ? s.length : c ?? 0;
-    } else {
-      sessions = 0;
-    }
+    const output = execSync('openclaw sessions --active 5 --json 2>/dev/null || echo "[]"', { timeout: 5000 }).toString();
+    const parsed = JSON.parse(output.trim());
+    sessions = Array.isArray(parsed) ? parsed.length : 0;
   } catch {
     sessions = 0;
   }
 
-  const loadAvg = os.loadavg()[0];
+  const snapshot = getSystemSnapshot();
   const cpuCores = os.cpus().length;
-  const cpuPercent = Math.min(100, Math.round((loadAvg / cpuCores) * 100));
-
-  const totalMem = os.totalmem();
-  const freeMem = os.freemem();
-  const usedMem = totalMem - freeMem;
 
   return NextResponse.json({
     gateway: { connected: gatewayConnected },
     sessions,
-    cpu: { percent: cpuPercent, loadAvg: loadAvg.toFixed(2) },
-    memory: {
-      used: usedMem,
-      total: totalMem,
-      percent: Math.round((usedMem / totalMem) * 100),
-    },
+    cpu: snapshot.cpu,
+    memory: snapshot.memory,
     system: {
       hostname: os.hostname(),
       cpuCores,

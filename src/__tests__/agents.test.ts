@@ -1,6 +1,10 @@
 import { getAgents, getAgent, getAgentsGraph, getAgentsStatus, STATIC_RELATIONS, updateAgent, deleteAgent, createAgent } from '@/lib/agents';
 import fs from 'fs';
 
+jest.mock('child_process', () => ({
+  execFileSync: jest.fn(() => JSON.stringify({ sessions: [] })),
+}));
+
 // Mock config lib
 jest.mock('@/lib/config', () => ({
   readOpenClawConfig: () => ({

@@ -15,6 +15,6 @@ describe('Header', () => {
 
   it('renders Gateway status indicator', () => {
     render(<Header />);
-    expect(screen.getByText('Gateway: Disconnected')).toBeInTheDocument();
+    expect(screen.getByText('Disconnected')).toBeInTheDocument();
   });
 });

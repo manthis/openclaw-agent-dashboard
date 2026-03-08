@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Users, Network, Settings, Github, Wifi, WifiOff, Activity, Cpu, MemoryStick } from 'lucide-react';
 import { useGatewayActivity } from '@/lib/hooks/use-gateway-activity';
 import { CpuMemHistorySection } from '@/components/CpuMemHistorySection';
+import { useLiveMetrics, type LiveMetricsSnapshot } from '@/lib/hooks/use-live-metrics';
 
 interface SystemData {
   gateway: { connected: boolean };
@@ -37,22 +38,50 @@ const TYPE_BADGE_COLORS: Record<string, string> = {
 };
 const DEFAULT_BADGE = 'bg-slate-600/20 text-slate-400';
 
+function systemToLiveMetrics(d: SystemData): LiveMetricsSnapshot {
+  return {
+    gatewayConnected: Boolean(d?.gateway?.connected),
+    sessionsActive5m: Number(d?.sessions ?? 0),
+    cpuPercent: Number(d?.cpu?.percent ?? 0),
+    loadAvg: String(d?.cpu?.loadAvg ?? '0.0, 0.0, 0.0'),
+    memUsed: Number(d?.memory?.used ?? 0),
+    memTotal: Number(d?.memory?.total ?? 0),
+    memPercent: Number(d?.memory?.percent ?? 0),
+    ts: Date.now(),
+  };
+}
+
 export function DashboardPageClient() {
   const [data, setData] = useState<SystemData | null>(null);
   const { connected: gwConnected, events: gwEvents } = useGatewayActivity();
 
-  const fetchData = async () => {
+  const live = useLiveMetrics({
+    pollFallback: async () => {
+      const res = await fetch('/api/system', { cache: 'no-store' });
+      if (!res.ok) return null;
+      const d = (await res.json()) as SystemData;
+      return systemToLiveMetrics(d);
+    },
+  });
+
+  const fetchSystemInfoOnce = async () => {
     try {
-      const res = await fetch('/api/system');
+      const res = await fetch('/api/system', { cache: 'no-store' });
       if (res.ok) setData(await res.json());
     } catch {}
   };
 
   useEffect(() => {
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
-    return () => clearInterval(interval);
+    void fetchSystemInfoOnce();
   }, []);
+
+  const gatewayConnected = live?.gatewayConnected ?? data?.gateway.connected;
+  const sessionsActive5m = live?.sessionsActive5m ?? data?.sessions;
+  const cpuPercent = live?.cpuPercent ?? data?.cpu.percent;
+  const loadAvg = live?.loadAvg ?? data?.cpu.loadAvg;
+  const memPercent = live?.memPercent ?? data?.memory.percent;
+  const memUsed = live?.memUsed ?? data?.memory.used;
+  const memTotal = live?.memTotal ?? data?.memory.total;
 
   const quickActions = [
     { href: '/agents', label: 'Agents', icon: Users, desc: 'Manage your agents', external: false },
@@ -74,13 +103,13 @@ export function DashboardPageClient() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
-                {data?.gateway.connected
+                {gatewayConnected
                   ? <Wifi className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
                   : <WifiOff className="w-4 h-4 text-red-500 dark:text-red-400" />}
                 <span className="text-xs text-gray-500 dark:text-slate-400">Gateway</span>
               </div>
-              <p className={`text-lg font-semibold ${data?.gateway.connected ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                {data ? (data.gateway.connected ? 'Connected' : 'Offline') : '—'}
+              <p className={`text-lg font-semibold ${gatewayConnected ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                {gatewayConnected === undefined ? '—' : (gatewayConnected ? 'Connected' : 'Offline')}
               </p>
             </div>
 
@@ -90,7 +119,7 @@ export function DashboardPageClient() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">Sessions</span>
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {data !== null ? data.sessions : '—'}
+                {sessionsActive5m !== undefined ? sessionsActive5m : '—'}
               </p>
             </div>
 
@@ -100,9 +129,9 @@ export function DashboardPageClient() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">CPU</span>
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {data ? data.cpu.percent + '%' : '—'}
+                {cpuPercent !== undefined ? cpuPercent + '%' : '—'}
               </p>
-              {data && <p className="text-xs text-gray-400 dark:text-slate-500">load {data.cpu.loadAvg}</p>}
+              {loadAvg !== undefined && <p className="text-xs text-gray-400 dark:text-slate-500">load {loadAvg}</p>}
             </div>
 
             <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
@@ -111,12 +140,15 @@ export function DashboardPageClient() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">Memory</span>
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {data ? data.memory.percent + '%' : '—'}
+                {memPercent !== undefined ? memPercent + '%' : '—'}
               </p>
-              {data && <p className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(data.memory.used)} / {formatBytes(data.memory.total)}</p>}
+              {memUsed !== undefined && memTotal !== undefined && (
+                <p className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(memUsed)} / {formatBytes(memTotal)}</p>
+              )}
             </div>
           </div>
         </section>
+
         <CpuMemHistorySection />
 
         <section>
