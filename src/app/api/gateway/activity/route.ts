@@ -21,14 +21,31 @@ function uuid(): string {
 export async function GET() {
   const encoder = new TextEncoder();
 
+  let cleanup: (() => void) | null = null;
+
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       let closed = false;
 
+      const safeClose = () => {
+        if (closed) return;
+        closed = true;
+        try {
+          controller.close();
+        } catch {
+          // ignore
+        }
+      };
+
       const send = (event: string, data: unknown) => {
         if (closed) return;
-        controller.enqueue(encoder.encode(`event: ${event}\n`));
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        try {
+          controller.enqueue(encoder.encode(`event: ${event}\n`));
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
+        } catch {
+          // If the controller is already closed, stop writing.
+          closed = true;
+        }
       };
 
       const ws = new WebSocket(GATEWAY_WS_URL);
@@ -84,13 +101,13 @@ export async function GET() {
 
         if (msg.type === 'event') {
           send('gateway_event', msg);
-          return;
         }
       });
 
       ws.on('close', (code, reason) => {
         send('status', { phase: 'ws_close', code, reason: reason?.toString?.() });
-        if (!closed) controller.close();
+        clearInterval(heartbeat);
+        safeClose();
       });
 
       ws.on('error', (err) => {
@@ -102,7 +119,7 @@ export async function GET() {
         }
       });
 
-      const cleanup = () => {
+      cleanup = () => {
         if (closed) return;
         closed = true;
         clearInterval(heartbeat);
@@ -111,14 +128,11 @@ export async function GET() {
         } catch {
           // ignore
         }
+        safeClose();
       };
-
-      // store cleanup for cancel
-      (stream as any)._cleanup = cleanup;
     },
     cancel() {
-      const anyStream = stream as any;
-      if (typeof anyStream._cleanup === 'function') anyStream._cleanup();
+      cleanup?.();
     },
   });
 
