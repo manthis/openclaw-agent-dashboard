@@ -7,20 +7,26 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue?logo=typescript)](https://www.typescriptlang.org)
 [![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38bdf8?logo=tailwindcss)](https://tailwindcss.com)
 [![ReactFlow](https://img.shields.io/badge/ReactFlow-11-ff0072)](https://reactflow.dev)
+[![emoji-mart](https://img.shields.io/badge/emoji--mart-5-yellow)](https://github.com/missive/emoji-mart)
 [![License](https://img.shields.io/badge/license-MIT-lightgrey)](LICENSE)
 
-A beautiful, real-time dashboard for monitoring and managing your [OpenClaw](https://openclaw.dev) agent network. Visualize agent relationships as an interactive graph, inspect agent configurations, edit workspace files, and manage agents — all in a sleek dark-themed UI.
+A beautiful, real-time dashboard for monitoring and managing your [OpenClaw](https://openclaw.dev) agent network. Visualize agent relationships as an interactive graph, inspect and edit agent configurations, manage global config, and control your entire agent system — all in a sleek dark-themed UI.
 
 ---
 
 ## ✨ Features
 
 - 🔮 **Interactive Agent Graph** — ReactFlow visualization of all agents and their relationships, with zoom/pan and a minimap
-- 🗂️ **Sidebar Navigation** — Persistent sidebar with Dashboard and Agents pages
+- 🗂️ **Sidebar Navigation** — Persistent sidebar with Dashboard, Agents, and Config pages
 - 👤 **Agent Avatars** — Custom avatar images per agent, fallback to emoji
 - 📋 **Agent Cards** — Click any node to inspect: name, emoji, model, status, workspace, and workspace file viewer
-- ✏️ **Agent Editor** — Full CRUD for agents: edit name/emoji/model/workspace, view and edit workspace files (SOUL, IDENTITY, TOOLS, MEMORY, USER, AGENTS, HEARTBEAT)
+- ✏️ **Agent Editor** — Full CRUD for agents: edit name, emoji (picker), model (combobox), workspace (directory picker), and view/edit workspace markdown files (SOUL, IDENTITY, TOOLS, MEMORY, USER, AGENTS, HEARTBEAT)
+- 😀 **Emoji Picker** — Rich emoji selection via `emoji-mart` integrated into the agent form
+- 🤖 **Model Combobox** — Searchable combobox listing all available models fetched from `/api/models`
+- 📁 **Directory Picker** — File system directory picker for agent workspace selection
+- 🔗 **Agent Multi-Select** — Link/unlink agents with multi-select component
 - 🟢 **Live Status** — Real-time active/idle indicators with animated pulses
+- ⚙️ **Config Page** — Full OpenClaw config editor with structured fields: key-value pairs, string arrays, password fields, dynamic map editor, and section cards
 - 🌙 **Dark Theme** — Slate-dark UI built with shadcn/ui components
 - 🔒 **Security Headers** — CSP, X-Frame-Options, HSTS and more via Next.js middleware
 - ⚡ **Server-side Config** — Reads `~/.openclaw/openclaw.json` server-only for security
@@ -50,7 +56,12 @@ A beautiful, real-time dashboard for monitoring and managing your [OpenClaw](htt
 ### Page Agents — panneau d'édition
 ![Agents Edit](public/screenshots/agents-edit.png)
 
-> Panneau d'édition complet : nom, emoji, modèle, workspace, et éditeur de fichiers markdown intégré.
+> Panneau d'édition complet : emoji picker, model combobox, directory picker, et éditeur de fichiers markdown intégré.
+
+### Page Config
+![Config](public/screenshots/config.png)
+
+> `/config` expose tous les paramètres OpenClaw : clé/valeur, tableaux, maps dynamiques, mots de passe.
 
 ---
 
@@ -78,18 +89,24 @@ src/
 │   ├── layout.tsx                      # Root layout with Sidebar
 │   ├── agents/
 │   │   └── page.tsx                    # Agents list page
+│   ├── config/
+│   │   └── page.tsx                    # Config page
 │   └── api/
-│       └── agents/
-│           ├── route.ts                # GET /api/agents, POST /api/agents
-│           ├── status/route.ts         # GET /api/agents/status
-│           └── [id]/
-│               ├── route.ts            # GET, PUT, DELETE /api/agents/[id]
-│               ├── avatar/route.ts     # GET /api/agents/[id]/avatar
-│               └── files/
-│                   └── [filename]/
-│                       └── route.ts    # GET, PUT /api/agents/[id]/files/[filename]
+│       ├── agents/
+│       │   ├── route.ts                # GET /api/agents, POST /api/agents
+│       │   ├── status/route.ts         # GET /api/agents/status
+│       │   └── [id]/
+│       │       ├── route.ts            # GET, PUT, DELETE /api/agents/[id]
+│       │       ├── avatar/route.ts     # GET /api/agents/[id]/avatar
+│       │       └── files/
+│       │           └── [filename]/
+│       │               └── route.ts    # GET, PUT /api/agents/[id]/files/[filename]
+│       ├── config/
+│       │   └── route.ts               # GET, PUT /api/config
+│       └── models/
+│           └── route.ts               # GET /api/models
 ├── components/
-│   ├── Sidebar.tsx                     # Navigation sidebar
+│   ├── Sidebar.tsx                     # Navigation sidebar (Dashboard / Agents / Config)
 │   ├── Header.tsx                      # Top bar
 │   ├── DashboardClient.tsx             # Client wrapper for dashboard
 │   ├── AgentGraph.tsx                  # ReactFlow graph (SSR-safe)
@@ -97,73 +114,21 @@ src/
 │   ├── AgentCard.tsx                   # Agent detail panel (dashboard)
 │   ├── AgentsPageClient.tsx            # Agents list + edit panel
 │   ├── StatusBadge.tsx                 # Active/Idle indicator
+│   ├── agents/
+│   │   ├── AgentMultiSelect.tsx        # Multi-select for agent linking
+│   │   ├── DirectoryPickerField.tsx    # FS directory picker input
+│   │   ├── EmojiPickerField.tsx        # emoji-mart powered emoji selector
+│   │   ├── ModelComboBox.tsx           # Searchable model selector
+│   │   └── ModelMultiSelect.tsx        # Multi-select for models
+│   ├── config/
+│   │   ├── ConfigPageClient.tsx        # Config page client
+│   │   ├── DynamicMapEditor.tsx        # Key-value map editor
+│   │   ├── KeyValueEditor.tsx          # Generic key-value editor
+│   │   ├── PasswordField.tsx           # Masked password input
+│   │   ├── SectionCard.tsx             # Config section card wrapper
+│   │   └── StringArrayEditor.tsx       # Array of strings editor
 │   └── ui/                            # shadcn/ui primitives
-├── lib/
-│   ├── config.ts                       # server-only: reads openclaw.json
-│   └── agents.ts                       # Agent data access layer
-└── types/
-    └── agent.ts                        # TypeScript types
 ```
-
----
-
-## 📡 API Routes
-
-| Route | Method | Description |
-|-------|--------|-------------|
-| `/api/agents` | `GET` | Returns all agents as JSON array |
-| `/api/agents` | `POST` | Creates a new agent |
-| `/api/agents/status` | `GET` | Returns status map `{id: 'active'\|'idle'}` |
-| `/api/agents/[id]` | `GET` | Returns single agent or 404 |
-| `/api/agents/[id]` | `PUT` | Updates agent metadata |
-| `/api/agents/[id]` | `DELETE` | Deletes an agent |
-| `/api/agents/[id]/avatar` | `GET` | Serves agent avatar image |
-| `/api/agents/[id]/files/[filename]` | `GET` | Returns workspace file content |
-| `/api/agents/[id]/files/[filename]` | `PUT` | Writes workspace file content |
-
-### Example: GET /api/agents
-
-```json
-[
-  {
-    "id": "hal9000",
-    "name": "HAL9000",
-    "emoji": "🔴",
-    "avatar": "hal9000.png",
-    "model": "anthropic/claude-sonnet-4-6",
-    "workspace": "/Users/manthis/.openclaw/workspace/hal9000",
-    "status": "idle",
-    "relations": ["mother"]
-  }
-]
-```
-
----
-
-## 🧪 Tests
-
-```bash
-# Unit tests
-npm test
-
-# Unit tests + coverage report
-npm run test:coverage
-
-# Lint
-npm run lint
-
-# Type check
-npm run typecheck
-```
-
----
-
-## 🔒 Security
-
-- All OpenClaw config is read **server-side only** — never exposed to the client
-- Security headers via Next.js middleware: `CSP`, `X-Frame-Options`, `X-Content-Type-Options`, `HSTS`
-- Input validation on all PUT/POST routes
-- File access restricted to agent workspaces
 
 ---
 
@@ -171,22 +136,24 @@ npm run typecheck
 
 | Layer | Technology |
 |-------|------------|
-| Framework | Next.js 15 (App Router) |
+| Framework | [Next.js 15](https://nextjs.org) (App Router, Server Components) |
 | Language | TypeScript (strict) |
-| Styling | Tailwind CSS + shadcn/ui |
-| Graph | ReactFlow 11 |
-| Animations | Framer Motion |
-| Icons | Lucide React |
-| Testing | Jest + Testing Library |
+| Styling | Tailwind CSS + [shadcn/ui](https://ui.shadcn.com) |
+| Graph | [@xyflow/react](https://reactflow.dev) (ReactFlow v11) |
+| Emoji | [emoji-mart](https://github.com/missive/emoji-mart) + `@emoji-mart/react` + `@emoji-mart/data` |
+| Animations | [Framer Motion](https://www.framer.com/motion/) |
+| Icons | [Lucide React](https://lucide.dev) |
+| UI Primitives | [Radix UI](https://www.radix-ui.com) |
+| Runtime | Node.js (server-side config access) |
 
 ---
 
-## 📦 Project Structure Notes
+## 🔐 Security
 
-- **Workspace files** are stored as `.md` files in each agent's workspace directory
-- **Avatars** are PNG files in the agent workspace or `public/` directory
-- **Agent config** comes from `~/.openclaw/openclaw.json` — the source of truth
-- **Mutations** (PUT/DELETE) write back to disk and update the config
+- All OpenClaw config is read **server-side only** — never exposed to the browser
+- Next.js middleware enforces: `CSP`, `X-Frame-Options: DENY`, `X-Content-Type-Options`, `HSTS`
+- API routes validate all inputs before writing to disk
+- `server-only` package enforced on config access utilities
 
 ---
 
