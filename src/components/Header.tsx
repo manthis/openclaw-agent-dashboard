@@ -35,6 +35,10 @@ export function Header() {
 
   const isDark = resolvedTheme === 'dark';
 
+  const dotClass = connected
+    ? 'bg-emerald-400 ring-2 ring-emerald-300/60 shadow-[0_0_6px_rgba(52,211,153,0.9),0_0_16px_rgba(52,211,153,0.9),0_0_28px_rgba(52,211,153,0.55)]'
+    : 'bg-rose-400 ring-2 ring-rose-300/60 shadow-[0_0_6px_rgba(251,113,133,0.9),0_0_16px_rgba(251,113,133,0.9),0_0_28px_rgba(251,113,133,0.55)]';
+
   return (
     <header className="border-b border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900/80 backdrop-blur-sm px-4 md:px-6 py-3 md:py-4 flex items-center justify-between">
       <div className="flex items-center gap-2 md:gap-3">
@@ -46,11 +50,7 @@ export function Header() {
       </div>
       <div className="flex items-center gap-3 text-sm">
         <div className="flex items-center gap-2">
-          <span
-            className={`w-2 h-2 rounded-full animate-pulse inline-block ${
-              connected ? 'bg-green-500' : 'bg-red-500'
-            }`}
-          />
+          <span className={`w-3 h-3 rounded-full inline-block animate-pulse ${dotClass}`} />
           <span
             className={`text-xs md:text-sm ${
               connected
