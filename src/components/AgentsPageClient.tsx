@@ -1,5 +1,6 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import type { Agent } from '@/types/agent';
 import { StatusBadge } from './StatusBadge';
@@ -487,6 +488,8 @@ export function AgentsPageClient() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Agent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const loadAgents = useCallback(() => {
     void fetch('/api/agents')
@@ -496,6 +499,19 @@ export function AgentsPageClient() {
   }, []);
 
   useEffect(() => { loadAgents(); }, [loadAgents]);
+
+  // Auto-open agent panel when ?open=<agentId> is present
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (openId && agents.length > 0) {
+      const target = agents.find((a) => a.id === openId);
+      if (target) {
+        setSelected(target);
+        // Clean up the query param without re-render loop
+        router.replace('/agents', { scroll: false });
+      }
+    }
+  }, [searchParams, agents, router]);
 
   const handleUpdated = (updated: Agent) => {
     setAgents((prev) => prev.map((a) => a.id === updated.id ? updated : a));

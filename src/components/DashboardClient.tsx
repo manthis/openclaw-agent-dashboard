@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import type { Agent, AgentRelation } from '@/types/agent';
 import { StatusBadge } from './StatusBadge';
+import { MobileDashboard } from './MobileDashboard';
 
 const AgentGraph = dynamic(
   () => import('@/components/AgentGraph').then((m) => ({ default: m.AgentGraph })),
@@ -79,7 +80,7 @@ export function DashboardClient({ agents, relations }: DashboardClientProps) {
   }, []);
 
   if (isMobile) {
-    return <AgentMobileList agents={agents} />;
+    return <MobileDashboard agents={agents} relations={relations} />;
   }
 
   return <AgentGraph agents={agents} relations={relations} />;
