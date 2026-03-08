@@ -1,6 +1,7 @@
 export type AgentStatus = 'active' | 'idle';
 export type ToolsProfile = 'minimal' | 'coding' | 'messaging' | 'full';
-export type SandboxMode = 'off' | 'all' | 'tools';
+export type SandboxMode = 'off' | 'non-main' | 'all';
+export type HeartbeatTarget = 'none' | 'last' | 'telegram' | 'whatsapp' | 'signal' | 'discord';
 
 export interface Agent {
   id: string;
@@ -21,13 +22,20 @@ export interface Agent {
     heartbeat: boolean;
   };
   relations: string[];
+  // P0 fields
   toolsProfile?: ToolsProfile;
   skills?: string[];
   sandboxMode?: SandboxMode;
-  heartbeat?: { every: string; model?: string };
-  allowAgents?: string[];
   modelFallbacks?: string[];
-  isDefault?: boolean;
+  default?: boolean;
+  // P1 fields
+  toolsAllow?: string[];
+  toolsDeny?: string[];
+  heartbeatEvery?: string;
+  heartbeatTarget?: HeartbeatTarget;
+  heartbeatModel?: string;
+  heartbeatPrompt?: string;
+  subagentsAllowAgents?: string[];
 }
 
 export interface AgentRelation {

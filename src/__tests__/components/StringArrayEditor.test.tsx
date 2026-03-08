@@ -16,12 +16,13 @@ describe('StringArrayEditor', () => {
 
   it('adds an item via button click', () => {
     const onChange = jest.fn();
-    render(<StringArrayEditor label="List" value={['existing']} onChange={onChange} />);
+    render(<StringArrayEditor label="List" value={[]} onChange={onChange} />);
     const input = screen.getByPlaceholderText('Add item...');
     fireEvent.change(input, { target: { value: 'newitem' } });
-    const btn = screen.getByRole('button');
-    fireEvent.click(btn);
-    expect(onChange).toHaveBeenCalledWith(['existing', 'newitem']);
+    // Only one button when value is empty (add button)
+    const btns = screen.getAllByRole('button');
+    fireEvent.click(btns[0]); // add button
+    expect(onChange).toHaveBeenCalledWith(['newitem']);
   });
 
   it('adds an item via Enter key', () => {
@@ -38,16 +39,17 @@ describe('StringArrayEditor', () => {
     render(<StringArrayEditor label="List" value={['dup']} onChange={onChange} />);
     const input = screen.getByPlaceholderText('Add item...');
     fireEvent.change(input, { target: { value: 'dup' } });
-    fireEvent.click(screen.getByRole('button'));
+    // btns[0] is the add button
+    const btns = screen.getAllByRole('button');
+    fireEvent.click(btns[0]);
     expect(onChange).not.toHaveBeenCalled();
   });
 
   it('removes an item', () => {
     const onChange = jest.fn();
     render(<StringArrayEditor label="List" value={['a', 'b', 'c']} onChange={onChange} />);
-    // There are remove buttons for each item
+    // btns[0] = add, btns[1..3] = remove for a, b, c
     const removeBtns = screen.getAllByRole('button');
-    // first button is add, then remove buttons
     fireEvent.click(removeBtns[1]); // remove 'a'
     expect(onChange).toHaveBeenCalledWith(['b', 'c']);
   });

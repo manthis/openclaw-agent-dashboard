@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import type { Agent } from '@/types/agent';
 import { StatusBadge } from './StatusBadge';
@@ -15,165 +15,179 @@ function AgentAvatar({ agent }: { agent: Agent }) {
   const [err, setErr] = useState(false);
   if (agent.avatar && !err) {
     return (
-      <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-slate-700 flex-shrink-0">
+      <div className='w-14 h-14 rounded-full overflow-hidden border-2 border-slate-700 flex-shrink-0'>
         <Image
           src={`/api/agents/${agent.id}/avatar`}
           alt={agent.name}
           width={56}
           height={56}
-          className="object-cover w-full h-full"
+          className='object-cover w-full h-full'
           onError={() => setErr(true)}
         />
       </div>
     );
   }
-  return <span className="text-4xl">{agent.emoji}</span>;
+  return <span className='text-4xl'>{agent.emoji}</span>;
 }
 
 type FileContent = Partial<Record<WorkspaceFile, string>>;
 
-function csvToArr(v: string): string[] {
-  return v.split(',').map((s) => s.trim()).filter(Boolean);
-}
-
-function arrToCsv(a?: string[]): string {
-  return a?.join(', ') ?? '';
-}
-
-/* ── Advanced Settings shared fields ── */
-interface AdvancedFields {
-  toolsProfile: string;
-  skills: string;
-  sandboxMode: string;
-  heartbeatEvery: string;
-  heartbeatModel: string;
-  allowAgents: string;
-  modelFallbacks: string;
-  isDefault: boolean;
-}
-
-function AdvancedSettingsSection({ adv, setAdv }: { adv: AdvancedFields; setAdv: (fn: (prev: AdvancedFields) => AdvancedFields) => void }) {
+function TagsInput({ tags, onChange, placeholder }: { tags: string[]; onChange: (t: string[]) => void; placeholder?: string }) {
+  const [input, setInput] = useState('');
+  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && input.trim()) {
+      e.preventDefault();
+      if (!tags.includes(input.trim())) onChange([...tags, input.trim()]);
+      setInput('');
+    } else if (e.key === 'Backspace' && !input && tags.length > 0) {
+      onChange(tags.slice(0, -1));
+    }
+  };
   return (
-    <div className="space-y-3">
-      <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-2">Advanced Settings</h3>
-      <div>
-        <label className={LABEL_CLS}>Tools Profile</label>
-        <select className={SELECT_CLS} value={adv.toolsProfile} onChange={(e) => setAdv((p) => ({ ...p, toolsProfile: e.target.value }))}>
-          <option value="">— none —</option>
-          <option value="minimal">minimal</option>
-          <option value="coding">coding</option>
-          <option value="messaging">messaging</option>
-          <option value="full">full</option>
-        </select>
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Skills (comma-separated)</label>
-        <textarea className={INPUT_CLS + ' h-16 resize-y'} value={adv.skills} onChange={(e) => setAdv((p) => ({ ...p, skills: e.target.value }))} placeholder="skill1, skill2" />
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Sandbox Mode</label>
-        <select className={SELECT_CLS} value={adv.sandboxMode} onChange={(e) => setAdv((p) => ({ ...p, sandboxMode: e.target.value }))}>
-          <option value="">— none —</option>
-          <option value="off">off</option>
-          <option value="all">all</option>
-          <option value="tools">tools</option>
-        </select>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className={LABEL_CLS}>Heartbeat Every</label>
-          <input className={INPUT_CLS} value={adv.heartbeatEvery} onChange={(e) => setAdv((p) => ({ ...p, heartbeatEvery: e.target.value }))} placeholder="e.g. 30s" />
-        </div>
-        <div>
-          <label className={LABEL_CLS}>Heartbeat Model</label>
-          <input className={INPUT_CLS} value={adv.heartbeatModel} onChange={(e) => setAdv((p) => ({ ...p, heartbeatModel: e.target.value }))} placeholder="optional model" />
-        </div>
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Allow Agents (comma-separated)</label>
-        <textarea className={INPUT_CLS + ' h-16 resize-y'} value={adv.allowAgents} onChange={(e) => setAdv((p) => ({ ...p, allowAgents: e.target.value }))} placeholder="agent1, agent2" />
-      </div>
-      <div>
-        <label className={LABEL_CLS}>Model Fallbacks (comma-separated)</label>
-        <textarea className={INPUT_CLS + ' h-16 resize-y'} value={adv.modelFallbacks} onChange={(e) => setAdv((p) => ({ ...p, modelFallbacks: e.target.value }))} placeholder="model1, model2" />
-      </div>
-      <div className="flex items-center gap-2">
-        <input type="checkbox" id="isDefault" checked={adv.isDefault} onChange={(e) => setAdv((p) => ({ ...p, isDefault: e.target.checked }))} className="accent-indigo-500" />
-        <label htmlFor="isDefault" className="text-slate-400 text-sm">Default agent</label>
-      </div>
+    <div className='flex flex-wrap gap-1 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1.5 min-h-[40px]'>
+      {tags.map((t) => (
+        <span key={t} className='flex items-center gap-1 bg-slate-700 text-slate-200 text-xs px-2 py-0.5 rounded'>
+          {t}
+          <button type='button' onClick={() => onChange(tags.filter((x) => x !== t))} className='text-slate-400 hover:text-red-400 leading-none'>&times;</button>
+        </span>
+      ))}
+      <input
+        className='flex-1 min-w-[120px] bg-transparent text-slate-200 text-sm outline-none py-0.5'
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={handleKey}
+        placeholder={placeholder ?? 'Enter to add'}
+      />
     </div>
   );
 }
 
-function buildAdvancedBody(adv: AdvancedFields): Record<string, unknown> {
-  const body: Record<string, unknown> = {};
-  if (adv.toolsProfile) body.toolsProfile = adv.toolsProfile;
-  if (adv.skills.trim()) body.skills = csvToArr(adv.skills);
-  if (adv.sandboxMode) body.sandboxMode = adv.sandboxMode;
-  if (adv.heartbeatEvery.trim()) body.heartbeatEvery = adv.heartbeatEvery.trim();
-  if (adv.heartbeatModel.trim()) body.heartbeatModel = adv.heartbeatModel.trim();
-  if (adv.allowAgents.trim()) body.allowAgents = csvToArr(adv.allowAgents);
-  if (adv.modelFallbacks.trim()) body.modelFallbacks = csvToArr(adv.modelFallbacks);
-  body.isDefault = adv.isDefault;
-  return body;
+type SectionId = 'identity' | 'model' | 'tools' | 'sandbox' | 'heartbeat' | 'subagents';
+function SectionPanel({
+  title, dirty, open, onToggle, onSave, saving, children,
+}: {
+  title: string; dirty: boolean; open: boolean;
+  onToggle: () => void; onSave: () => void; saving: boolean; children: React.ReactNode;
+}) {
+  return (
+    <div className='border-t border-slate-700/50'>
+      <button
+        type='button'
+        className='w-full flex items-center justify-between px-6 py-3 text-left hover:bg-slate-800/30 transition-colors'
+        onClick={onToggle}
+      >
+        <span className='flex items-center gap-2 text-slate-400 text-xs uppercase tracking-wider'>
+          {title}
+          {dirty && <span className='w-2 h-2 rounded-full bg-amber-500 inline-block' title='Unsaved changes' />}
+        </span>
+        <span className='text-slate-600'>{open ? '▾' : '▸'}</span>
+      </button>
+      {open && (
+        <div className='px-6 pb-4 space-y-3'>
+          {children}
+          <button
+            type='button'
+            onClick={onSave}
+            disabled={saving}
+            className='mt-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-xs font-medium px-4 py-1.5 rounded-lg transition-colors'
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
-/* ── Edit Panel ── */
 function AgentEditPanel({
-  agent,
-  onClose,
-  onUpdated,
-  onDeleted,
+  agent, onClose, onUpdated, onDeleted,
 }: {
   agent: Agent;
   onClose: () => void;
   onUpdated: (a: Agent) => void;
   onDeleted: (id: string) => void;
 }) {
-  const [form, setForm] = useState({
+  const [identity, setIdentity] = useState({
     name: agent.name,
     emoji: agent.emoji,
-    model: agent.model,
     theme: agent.theme ?? '',
-    workspace: agent.workspace ?? '',
+    avatar: agent.avatar ?? '',
   });
-  const [adv, setAdv] = useState<AdvancedFields>({
+  const [modelFields, setModelFields] = useState({
+    model: agent.model,
+    modelFallbacks: agent.modelFallbacks ?? [],
+    isDefault: agent.default ?? false,
+  });
+  const [toolsFields, setToolsFields] = useState({
     toolsProfile: agent.toolsProfile ?? '',
-    skills: arrToCsv(agent.skills),
-    sandboxMode: agent.sandboxMode ?? '',
-    heartbeatEvery: agent.heartbeat?.every ?? '',
-    heartbeatModel: agent.heartbeat?.model ?? '',
-    allowAgents: arrToCsv(agent.allowAgents),
-    modelFallbacks: arrToCsv(agent.modelFallbacks),
-    isDefault: agent.isDefault ?? false,
+    toolsAllow: agent.toolsAllow ?? [],
+    toolsDeny: agent.toolsDeny ?? [],
+    skills: agent.skills ?? [],
   });
-  const [saving, setSaving] = useState(false);
+  const [sandboxFields, setSandboxFields] = useState({
+    sandboxMode: agent.sandboxMode ?? '',
+  });
+  const [heartbeatFields, setHeartbeatFields] = useState({
+    heartbeatEvery: agent.heartbeatEvery ?? '',
+    heartbeatTarget: agent.heartbeatTarget ?? '',
+    heartbeatModel: agent.heartbeatModel ?? '',
+    heartbeatPrompt: agent.heartbeatPrompt ?? '',
+  });
+  const [subagentsFields, setSubagentsFields] = useState({
+    subagentsAllowAgents: agent.subagentsAllowAgents ?? [],
+  });
+
+  const initRef = useRef({
+    identity: { name: agent.name, emoji: agent.emoji, theme: agent.theme ?? '', avatar: agent.avatar ?? '' },
+    modelFields: { model: agent.model, modelFallbacks: agent.modelFallbacks ?? [], isDefault: agent.default ?? false },
+    toolsFields: { toolsProfile: agent.toolsProfile ?? '', toolsAllow: agent.toolsAllow ?? [], toolsDeny: agent.toolsDeny ?? [], skills: agent.skills ?? [] },
+    sandboxFields: { sandboxMode: agent.sandboxMode ?? '' },
+    heartbeatFields: { heartbeatEvery: agent.heartbeatEvery ?? '', heartbeatTarget: agent.heartbeatTarget ?? '', heartbeatModel: agent.heartbeatModel ?? '', heartbeatPrompt: agent.heartbeatPrompt ?? '' },
+    subagentsFields: { subagentsAllowAgents: agent.subagentsAllowAgents ?? [] },
+  });
+
+  const [dirty, setDirty] = useState<Record<SectionId, boolean>>({
+    identity: false, model: false, tools: false, sandbox: false, heartbeat: false, subagents: false,
+  });
+  const [openSections, setOpenSections] = useState<Record<SectionId, boolean>>({
+    identity: true, model: false, tools: false, sandbox: false, heartbeat: false, subagents: false,
+  });
+  const [saving, setSaving] = useState<Record<SectionId, boolean>>({
+    identity: false, model: false, tools: false, sandbox: false, heartbeat: false, subagents: false,
+  });
   const [deleting, setDeleting] = useState(false);
   const [activeFile, setActiveFile] = useState<WorkspaceFile>('SOUL');
   const [fileContents, setFileContents] = useState<FileContent>({});
   const [fileSaving, setFileSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  };
+  useEffect(() => {
+    const init = initRef.current;
+    setDirty({
+      identity: JSON.stringify(identity) !== JSON.stringify(init.identity),
+      model: JSON.stringify(modelFields) !== JSON.stringify(init.modelFields),
+      tools: JSON.stringify(toolsFields) !== JSON.stringify(init.toolsFields),
+      sandbox: JSON.stringify(sandboxFields) !== JSON.stringify(init.sandboxFields),
+      heartbeat: JSON.stringify(heartbeatFields) !== JSON.stringify(init.heartbeatFields),
+      subagents: JSON.stringify(subagentsFields) !== JSON.stringify(init.subagentsFields),
+    });
+  }, [identity, modelFields, toolsFields, sandboxFields, heartbeatFields, subagentsFields]);
+
+  const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(null), 2500); };
 
   const loadFile = useCallback(async (file: WorkspaceFile) => {
     if (fileContents[file] !== undefined) return;
     const res = await fetch(`/api/agents/${agent.id}/files/${file.toLowerCase()}`);
     if (res.ok) {
       const data = await res.json() as { content: string };
-      setFileContents((prev) => ({ ...prev, [file]: data.content ?? "" }));
+      setFileContents((prev) => ({ ...prev, [file]: data.content ?? '' }));
     }
   }, [agent.id, fileContents]);
 
   useEffect(() => { void loadFile(activeFile); }, [activeFile, loadFile]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    const body = { ...form, ...buildAdvancedBody(adv) };
+  const saveSection = async (sectionId: SectionId, body: Record<string, unknown>) => {
+    setSaving((s) => ({ ...s, [sectionId]: true }));
     const res = await fetch(`/api/agents/${agent.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
@@ -182,23 +196,24 @@ function AgentEditPanel({
     if (res.ok) {
       const updated = await res.json() as Agent;
       onUpdated(updated);
-      showToast('Agent saved');
-    } else {
-      showToast('Error saving agent');
-    }
-    setSaving(false);
+      if (sectionId === 'identity') initRef.current.identity = { ...identity };
+      if (sectionId === 'model') initRef.current.modelFields = { ...modelFields };
+      if (sectionId === 'tools') initRef.current.toolsFields = { ...toolsFields };
+      if (sectionId === 'sandbox') initRef.current.sandboxFields = { ...sandboxFields };
+      if (sectionId === 'heartbeat') initRef.current.heartbeatFields = { ...heartbeatFields };
+      if (sectionId === 'subagents') initRef.current.subagentsFields = { ...subagentsFields };
+      setDirty((d) => ({ ...d, [sectionId]: false }));
+      showToast('Saved');
+    } else { showToast('Error saving'); }
+    setSaving((s) => ({ ...s, [sectionId]: false }));
   };
 
   const handleDelete = async () => {
     if (!window.confirm(`Delete agent ${agent.name}? This cannot be undone.`)) return;
     setDeleting(true);
     const res = await fetch(`/api/agents/${agent.id}`, { method: 'DELETE' });
-    if (res.ok) {
-      onDeleted(agent.id);
-      onClose();
-    } else {
-      showToast('Error deleting agent');
-    }
+    if (res.ok) { onDeleted(agent.id); onClose(); }
+    else showToast('Error deleting agent');
     setDeleting(false);
   };
 
@@ -210,107 +225,107 @@ function AgentEditPanel({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content }),
     });
-    if (res.ok) {
-      showToast(`${activeFile}.md saved`);
-    } else {
-      showToast('Error saving file');
-    }
+    if (res.ok) showToast(`${activeFile}.md saved`);
+    else showToast('Error saving file');
     setFileSaving(false);
   };
 
+  const toggleSection = (s: SectionId) => setOpenSections((o) => ({ ...o, [s]: !o[s] }));
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        {toast && (
-          <div className="fixed top-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50">{toast}</div>
-        )}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <div className="flex items-center gap-3">
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
+      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto' onClick={(e) => e.stopPropagation()}>
+        {toast && <div className='fixed top-4 right-4 bg-indigo-600 text-white text-sm px-4 py-2 rounded-lg shadow-lg z-50'>{toast}</div>}
+        <div className='flex items-center justify-between px-6 py-4 border-b border-slate-700'>
+          <div className='flex items-center gap-3'>
             <AgentAvatar agent={agent} />
             <div>
-              <h2 className="text-white text-lg font-semibold">{agent.name}</h2>
-              <p className="text-slate-400 text-xs font-mono">{agent.id}</p>
+              <h2 className='text-white text-lg font-semibold'>{agent.name}</h2>
+              <p className='text-slate-400 text-xs font-mono'>{agent.id}</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-2xl leading-none" aria-label="Close">&times;</button>
-        </div>
-
-        <div className="px-6 py-4 space-y-3">
-          <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-2">Identity</h3>
-          {([['name', 'Name'], ['emoji', 'Emoji'], ['model', 'Model'], ['theme', 'Theme'], ['workspace', 'Workspace']] as const).map(([key, label]) => (
-            <div key={key}>
-              <label className={LABEL_CLS}>{label}</label>
-              <input
-                className={INPUT_CLS}
-                value={form[key]}
-                onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="px-6 py-4 border-t border-slate-700/50">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced((v) => !v)}
-            className="text-slate-400 text-xs uppercase tracking-wider hover:text-slate-200 transition-colors"
-          >
-            {showAdvanced ? '▾' : '▸'} Advanced Settings
-          </button>
-          {showAdvanced && (
-            <div className="mt-3">
-              <AdvancedSettingsSection adv={adv} setAdv={setAdv} />
-            </div>
-          )}
-        </div>
-
-        <div className="px-6 py-4 border-t border-slate-700/50">
-          <div className="flex gap-2">
-            <button
-              onClick={() => void handleSave()}
-              disabled={saving}
-              className="flex-1 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
-            >
-              {saving ? 'Saving...' : 'Save'}
-            </button>
-            <button
-              onClick={() => void handleDelete()}
-              disabled={deleting}
-              className="bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-400 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-            >
+          <div className='flex items-center gap-3'>
+            <button onClick={() => void handleDelete()} disabled={deleting} className='bg-red-900/40 hover:bg-red-800/60 disabled:opacity-50 text-red-400 text-sm font-medium px-3 py-1.5 rounded-lg transition-colors'>
               {deleting ? 'Deleting...' : 'Delete'}
             </button>
+            <button onClick={onClose} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
           </div>
         </div>
 
-        <div className="px-6 pb-6">
-          <h3 className="text-slate-400 text-xs uppercase tracking-wider mb-3">Workspace Files</h3>
-          <div className="flex flex-wrap gap-1 mb-3">
+        <SectionPanel title='Identity' dirty={dirty.identity} open={openSections.identity} onToggle={() => toggleSection('identity')} onSave={() => void saveSection('identity', { name: identity.name, emoji: identity.emoji, theme: identity.theme, avatar: identity.avatar || null })} saving={saving.identity}>
+          <div><label className={LABEL_CLS}>Name</label><input className={INPUT_CLS} value={identity.name} onChange={(e) => setIdentity((p) => ({ ...p, name: e.target.value }))} /></div>
+          <div><label className={LABEL_CLS}>Emoji</label><input className={INPUT_CLS} value={identity.emoji} onChange={(e) => setIdentity((p) => ({ ...p, emoji: e.target.value }))} /></div>
+          <div><label className={LABEL_CLS}>Theme</label><input className={INPUT_CLS} value={identity.theme} onChange={(e) => setIdentity((p) => ({ ...p, theme: e.target.value }))} /></div>
+          <div><label className={LABEL_CLS}>Avatar (filename)</label><input className={INPUT_CLS} value={identity.avatar} onChange={(e) => setIdentity((p) => ({ ...p, avatar: e.target.value }))} placeholder='agent.png' /></div>
+        </SectionPanel>
+
+        <SectionPanel title='Model' dirty={dirty.model} open={openSections.model} onToggle={() => toggleSection('model')} onSave={() => void saveSection('model', { model: modelFields.model, modelFallbacks: modelFields.modelFallbacks, default: modelFields.isDefault })} saving={saving.model}>
+          <div><label className={LABEL_CLS}>Model</label><input className={INPUT_CLS} value={modelFields.model} onChange={(e) => setModelFields((p) => ({ ...p, model: e.target.value }))} placeholder='anthropic/claude-sonnet-4' /></div>
+          <div><label className={LABEL_CLS}>Model Fallbacks (Enter to add)</label><TagsInput tags={modelFields.modelFallbacks} onChange={(t) => setModelFields((p) => ({ ...p, modelFallbacks: t }))} placeholder='model-name' /></div>
+          <div className='flex items-center gap-2'>
+            <input type='checkbox' id='editDefault' checked={modelFields.isDefault} onChange={(e) => setModelFields((p) => ({ ...p, isDefault: e.target.checked }))} className='accent-indigo-500' />
+            <label htmlFor='editDefault' className='text-slate-400 text-sm'>Default agent</label>
+          </div>
+        </SectionPanel>
+
+        <SectionPanel title='Tools & Skills' dirty={dirty.tools} open={openSections.tools} onToggle={() => toggleSection('tools')} onSave={() => void saveSection('tools', { toolsProfile: toolsFields.toolsProfile || undefined, toolsAllow: toolsFields.toolsAllow, toolsDeny: toolsFields.toolsDeny, skills: toolsFields.skills })} saving={saving.tools}>
+          <div><label className={LABEL_CLS}>Tools Profile</label>
+            <select className={SELECT_CLS} value={toolsFields.toolsProfile} onChange={(e) => setToolsFields((p) => ({ ...p, toolsProfile: e.target.value }))}>
+              <option value=''>— none —</option>
+              <option value='minimal'>minimal</option>
+              <option value='coding'>coding</option>
+              <option value='messaging'>messaging</option>
+              <option value='full'>full</option>
+            </select>
+          </div>
+          <div><label className={LABEL_CLS}>Tools Allow (Enter to add)</label><TagsInput tags={toolsFields.toolsAllow} onChange={(t) => setToolsFields((p) => ({ ...p, toolsAllow: t }))} placeholder='tool_name or group:category' /></div>
+          <div><label className={LABEL_CLS}>Tools Deny (Enter to add)</label><TagsInput tags={toolsFields.toolsDeny} onChange={(t) => setToolsFields((p) => ({ ...p, toolsDeny: t }))} placeholder='tool_name' /></div>
+          <div><label className={LABEL_CLS}>Skills (Enter to add)</label><TagsInput tags={toolsFields.skills} onChange={(t) => setToolsFields((p) => ({ ...p, skills: t }))} placeholder='skill-name' /></div>
+        </SectionPanel>
+
+        <SectionPanel title='Sandbox' dirty={dirty.sandbox} open={openSections.sandbox} onToggle={() => toggleSection('sandbox')} onSave={() => void saveSection('sandbox', { sandboxMode: sandboxFields.sandboxMode || undefined })} saving={saving.sandbox}>
+          <div><label className={LABEL_CLS}>Sandbox Mode</label>
+            <select className={SELECT_CLS} value={sandboxFields.sandboxMode} onChange={(e) => setSandboxFields((p) => ({ ...p, sandboxMode: e.target.value }))}>
+              <option value=''>— none —</option>
+              <option value='off'>off</option>
+              <option value='non-main'>non-main</option>
+              <option value='all'>all</option>
+            </select>
+          </div>
+        </SectionPanel>
+
+        <SectionPanel title='Heartbeat' dirty={dirty.heartbeat} open={openSections.heartbeat} onToggle={() => toggleSection('heartbeat')} onSave={() => void saveSection('heartbeat', { heartbeatEvery: heartbeatFields.heartbeatEvery || undefined, heartbeatTarget: heartbeatFields.heartbeatTarget || undefined, heartbeatModel: heartbeatFields.heartbeatModel || undefined, heartbeatPrompt: heartbeatFields.heartbeatPrompt || undefined })} saving={saving.heartbeat}>
+          <div className='grid grid-cols-2 gap-3'>
+            <div><label className={LABEL_CLS}>Every (e.g. 30m)</label><input className={INPUT_CLS} value={heartbeatFields.heartbeatEvery} onChange={(e) => setHeartbeatFields((p) => ({ ...p, heartbeatEvery: e.target.value }))} placeholder='30m' /></div>
+            <div><label className={LABEL_CLS}>Target</label>
+              <select className={SELECT_CLS} value={heartbeatFields.heartbeatTarget} onChange={(e) => setHeartbeatFields((p) => ({ ...p, heartbeatTarget: e.target.value }))}>
+                <option value=''>— none —</option>
+                <option value='none'>none</option>
+                <option value='last'>last</option>
+                <option value='telegram'>telegram</option>
+                <option value='whatsapp'>whatsapp</option>
+                <option value='signal'>signal</option>
+                <option value='discord'>discord</option>
+              </select>
+            </div>
+          </div>
+          <div><label className={LABEL_CLS}>Heartbeat Model</label><input className={INPUT_CLS} value={heartbeatFields.heartbeatModel} onChange={(e) => setHeartbeatFields((p) => ({ ...p, heartbeatModel: e.target.value }))} placeholder='optional model override' /></div>
+          <div><label className={LABEL_CLS}>Heartbeat Prompt</label><textarea className={INPUT_CLS + ' h-20 resize-y'} value={heartbeatFields.heartbeatPrompt} onChange={(e) => setHeartbeatFields((p) => ({ ...p, heartbeatPrompt: e.target.value }))} placeholder='Custom heartbeat prompt...' /></div>
+        </SectionPanel>
+
+        <SectionPanel title='Sub-agents' dirty={dirty.subagents} open={openSections.subagents} onToggle={() => toggleSection('subagents')} onSave={() => void saveSection('subagents', { subagentsAllowAgents: subagentsFields.subagentsAllowAgents })} saving={saving.subagents}>
+          <div><label className={LABEL_CLS}>Allow Agents (Enter to add, * for all)</label><TagsInput tags={subagentsFields.subagentsAllowAgents} onChange={(t) => setSubagentsFields((p) => ({ ...p, subagentsAllowAgents: t }))} placeholder='agent-id or *' /></div>
+        </SectionPanel>
+
+        <div className='px-6 pb-6 border-t border-slate-700/50 pt-4'>
+          <h3 className='text-slate-400 text-xs uppercase tracking-wider mb-3'>Workspace Files</h3>
+          <div className='flex flex-wrap gap-1 mb-3'>
             {WORKSPACE_FILES.map((f) => (
-              <button
-                key={f}
-                onClick={() => setActiveFile(f)}
-                className={`text-xs px-3 py-1 rounded font-mono transition-colors ${
-                  activeFile === f
-                    ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50'
-                    : 'bg-slate-800 text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                {f}.md
-              </button>
+              <button key={f} onClick={() => setActiveFile(f)} className={`text-xs px-3 py-1 rounded font-mono transition-colors ${activeFile === f ? 'bg-indigo-500/30 text-indigo-300 border border-indigo-500/50' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}>{f}.md</button>
             ))}
           </div>
-          <textarea
-            className="w-full h-48 bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono rounded-lg p-3 focus:outline-none focus:border-indigo-500 resize-y"
-            value={fileContents[activeFile] ?? ''}
-            onChange={(e) => setFileContents((prev) => ({ ...prev, [activeFile]: e.target.value }))}
-            placeholder={`${activeFile}.md content...`}
-          />
-          <button
-            onClick={() => void handleFileSave()}
-            disabled={fileSaving}
-            className="mt-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
+          <textarea className='w-full h-48 bg-slate-800 border border-slate-700 text-slate-300 text-xs font-mono rounded-lg p-3 focus:outline-none focus:border-indigo-500 resize-y' value={fileContents[activeFile] ?? ''} onChange={(e) => setFileContents((prev) => ({ ...prev, [activeFile]: e.target.value }))} placeholder={`${activeFile}.md content...`} />
+          <button onClick={() => void handleFileSave()} disabled={fileSaving} className='mt-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 text-slate-200 text-sm font-medium px-4 py-2 rounded-lg transition-colors'>
             {fileSaving ? 'Saving...' : `Save ${activeFile}.md`}
           </button>
         </div>
@@ -319,15 +334,11 @@ function AgentEditPanel({
   );
 }
 
-/* ── Add Agent Modal ── */
 function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [form, setForm] = useState({ id: '', name: '', emoji: '', model: '', workspace: '' });
-  const [adv, setAdv] = useState<AdvancedFields>({
-    toolsProfile: '', skills: '', sandboxMode: '',
-    heartbeatEvery: '', heartbeatModel: '',
-    allowAgents: '', modelFallbacks: '', isDefault: false,
-  });
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [toolsProfile, setToolsProfile] = useState('');
+  const [sandboxMode, setSandboxMode] = useState('');
+  const [isDefault, setIsDefault] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -336,22 +347,22 @@ function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated:
   const handleCreate = async () => {
     setSaving(true);
     setError(null);
-    const body = {
+    const body: Record<string, unknown> = {
       ...form,
       emoji: form.emoji || '🤖',
       model: form.model || 'unknown',
       workspace: form.workspace || '/tmp',
-      ...buildAdvancedBody(adv),
+      default: isDefault,
     };
+    if (toolsProfile) body.toolsProfile = toolsProfile;
+    if (sandboxMode) body.sandboxMode = sandboxMode;
     const res = await fetch('/api/agents', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    if (res.ok) {
-      onCreated();
-      onClose();
-    } else {
+    if (res.ok) { onCreated(); onClose(); }
+    else {
       const data = await res.json().catch(() => ({})) as { error?: string };
       setError(typeof data.error === 'string' ? data.error : 'Failed to create agent');
     }
@@ -359,56 +370,43 @@ function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
-          <h2 className="text-white text-lg font-semibold">Add Agent</h2>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-2xl leading-none" aria-label="Close">&times;</button>
+    <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/60' onClick={onClose}>
+      <div className='bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto' onClick={(e) => e.stopPropagation()}>
+        <div className='flex items-center justify-between px-6 py-4 border-b border-slate-700'>
+          <h2 className='text-white text-lg font-semibold'>Add Agent</h2>
+          <button onClick={onClose} className='text-slate-500 hover:text-slate-300 text-2xl leading-none' aria-label='Close'>&times;</button>
         </div>
-        <div className="px-6 py-4 space-y-3">
-          {error && <div className="text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-3 py-2">{error}</div>}
-          <div>
-            <label className={LABEL_CLS}>ID (required)</label>
-            <input className={INPUT_CLS} value={form.id} onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))} placeholder="my-agent" />
+        <div className='px-6 py-4 space-y-3'>
+          {error && <div className='text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-lg px-3 py-2'>{error}</div>}
+          <div><label className={LABEL_CLS}>ID (required)</label><input className={INPUT_CLS} value={form.id} onChange={(e) => setForm((f) => ({ ...f, id: e.target.value }))} placeholder='my-agent' /></div>
+          <div><label className={LABEL_CLS}>Name (required)</label><input className={INPUT_CLS} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder='My Agent' /></div>
+          <div><label className={LABEL_CLS}>Emoji</label><input className={INPUT_CLS} value={form.emoji} onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))} placeholder='🤖' /></div>
+          <div><label className={LABEL_CLS}>Model</label><input className={INPUT_CLS} value={form.model} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))} placeholder='claude-sonnet-4-20250514' /></div>
+          <div><label className={LABEL_CLS}>Workspace</label><input className={INPUT_CLS} value={form.workspace} onChange={(e) => setForm((f) => ({ ...f, workspace: e.target.value }))} placeholder='/path/to/workspace' /></div>
+          <div><label className={LABEL_CLS}>Tools Profile</label>
+            <select className={SELECT_CLS} value={toolsProfile} onChange={(e) => setToolsProfile(e.target.value)}>
+              <option value=''>— none —</option>
+              <option value='minimal'>minimal</option>
+              <option value='coding'>coding</option>
+              <option value='messaging'>messaging</option>
+              <option value='full'>full</option>
+            </select>
           </div>
-          <div>
-            <label className={LABEL_CLS}>Name (required)</label>
-            <input className={INPUT_CLS} value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="My Agent" />
+          <div><label className={LABEL_CLS}>Sandbox Mode</label>
+            <select className={SELECT_CLS} value={sandboxMode} onChange={(e) => setSandboxMode(e.target.value)}>
+              <option value=''>— none —</option>
+              <option value='off'>off</option>
+              <option value='non-main'>non-main</option>
+              <option value='all'>all</option>
+            </select>
           </div>
-          <div>
-            <label className={LABEL_CLS}>Emoji</label>
-            <input className={INPUT_CLS} value={form.emoji} onChange={(e) => setForm((f) => ({ ...f, emoji: e.target.value }))} placeholder="🤖" />
-          </div>
-          <div>
-            <label className={LABEL_CLS}>Model</label>
-            <input className={INPUT_CLS} value={form.model} onChange={(e) => setForm((f) => ({ ...f, model: e.target.value }))} placeholder="claude-sonnet-4-20250514" />
-          </div>
-          <div>
-            <label className={LABEL_CLS}>Workspace</label>
-            <input className={INPUT_CLS} value={form.workspace} onChange={(e) => setForm((f) => ({ ...f, workspace: e.target.value }))} placeholder="/path/to/workspace" />
-          </div>
-
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setShowAdvanced((v) => !v)}
-              className="text-slate-400 text-xs uppercase tracking-wider hover:text-slate-200 transition-colors"
-            >
-              {showAdvanced ? '▾' : '▸'} Advanced Settings
-            </button>
-            {showAdvanced && (
-              <div className="mt-3">
-                <AdvancedSettingsSection adv={adv} setAdv={setAdv} />
-              </div>
-            )}
+          <div className='flex items-center gap-2'>
+            <input type='checkbox' id='addDefault' checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className='accent-indigo-500' />
+            <label htmlFor='addDefault' className='text-slate-400 text-sm'>Default agent</label>
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-slate-700">
-          <button
-            onClick={() => void handleCreate()}
-            disabled={saving || !canSubmit}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors"
-          >
+        <div className='px-6 py-4 border-t border-slate-700'>
+          <button onClick={() => void handleCreate()} disabled={saving || !canSubmit} className='w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium py-2 rounded-lg transition-colors'>
             {saving ? 'Creating...' : 'Create Agent'}
           </button>
         </div>
@@ -417,7 +415,6 @@ function AddAgentModal({ onClose, onCreated }: { onClose: () => void; onCreated:
   );
 }
 
-/* ── Main Page ── */
 export function AgentsPageClient() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -438,47 +435,35 @@ export function AgentsPageClient() {
     setSelected(updated);
   };
 
-  const handleDeleted = (id: string) => {
-    setAgents((prev) => prev.filter((a) => a.id !== id));
-  };
+  const handleDeleted = (id: string) => setAgents((prev) => prev.filter((a) => a.id !== id));
 
   return (
-    <main className="flex-1 overflow-auto bg-slate-950 p-6">
-      <div className="max-w-6xl mx-auto">
-        <div className="flex items-center justify-between mb-6">
+    <main className='flex-1 overflow-auto bg-slate-950 p-6'>
+      <div className='max-w-6xl mx-auto'>
+        <div className='flex items-center justify-between mb-6'>
           <div>
-            <h1 className="text-white text-2xl font-bold">Agents</h1>
-            <p className="text-slate-400 text-sm mt-1">{agents.length} agent{agents.length !== 1 ? 's' : ''} configured</p>
+            <h1 className='text-white text-2xl font-bold'>Agents</h1>
+            <p className='text-slate-400 text-sm mt-1'>{agents.length} agent{agents.length !== 1 ? 's' : ''} configured</p>
           </div>
-          <button
-            onClick={() => setShowAdd(true)}
-            className="bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            + Add Agent
-          </button>
+          <button onClick={() => setShowAdd(true)} className='bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors'>+ Add Agent</button>
         </div>
-
         {loading ? (
-          <div className="text-slate-500 text-sm">Loading agents...</div>
+          <div className='text-slate-500 text-sm'>Loading agents...</div>
         ) : agents.length === 0 ? (
-          <div className="text-slate-500 text-sm">No agents found.</div>
+          <div className='text-slate-500 text-sm'>No agents found.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4'>
             {agents.map((agent) => (
-              <button
-                key={agent.id}
-                onClick={() => setSelected(agent)}
-                className="bg-slate-900 border border-slate-700 hover:border-indigo-500/50 rounded-xl p-4 text-left transition-all hover:shadow-lg hover:shadow-indigo-500/10 group"
-              >
-                <div className="flex items-start gap-3 mb-3">
+              <button key={agent.id} onClick={() => setSelected(agent)} className='bg-slate-900 border border-slate-700 hover:border-indigo-500/50 rounded-xl p-4 text-left transition-all hover:shadow-lg hover:shadow-indigo-500/10 group'>
+                <div className='flex items-start gap-3 mb-3'>
                   <AgentAvatar agent={agent} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-white text-sm font-semibold truncate group-hover:text-indigo-300 transition-colors">{agent.name}</p>
-                    <p className="text-slate-500 text-xs font-mono truncate">{agent.id}</p>
+                  <div className='flex-1 min-w-0'>
+                    <p className='text-white text-sm font-semibold truncate group-hover:text-indigo-300 transition-colors'>{agent.name}</p>
+                    <p className='text-slate-500 text-xs font-mono truncate'>{agent.id}</p>
                   </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <p className="text-slate-400 text-xs font-mono truncate max-w-[60%]">{agent.model}</p>
+                <div className='flex items-center justify-between'>
+                  <p className='text-slate-400 text-xs font-mono truncate max-w-[60%]'>{agent.model}</p>
                   <StatusBadge status={agent.status} />
                 </div>
               </button>
@@ -486,22 +471,8 @@ export function AgentsPageClient() {
           </div>
         )}
       </div>
-
-      {selected && (
-        <AgentEditPanel
-          agent={selected}
-          onClose={() => setSelected(null)}
-          onUpdated={handleUpdated}
-          onDeleted={handleDeleted}
-        />
-      )}
-
-      {showAdd && (
-        <AddAgentModal
-          onClose={() => setShowAdd(false)}
-          onCreated={loadAgents}
-        />
-      )}
+      {selected && <AgentEditPanel agent={selected} onClose={() => setSelected(null)} onUpdated={handleUpdated} onDeleted={handleDeleted} />}
+      {showAdd && <AddAgentModal onClose={() => setShowAdd(false)} onCreated={loadAgents} />}
     </main>
   );
 }

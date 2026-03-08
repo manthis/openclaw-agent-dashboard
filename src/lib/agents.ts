@@ -1,7 +1,7 @@
 import { readOpenClawConfig, fileExists } from './config';
 import fs from 'fs';
 import * as path from 'path';
-import type { Agent, AgentRelation, AgentsGraph, ToolsProfile, SandboxMode } from '@/types/agent';
+import type { Agent, AgentRelation, AgentsGraph, ToolsProfile, SandboxMode, HeartbeatTarget } from '@/types/agent';
 
 export const STATIC_RELATIONS: AgentRelation[] = [
   { source: 'hal9000', target: 'mother', label: 'delegates' },
@@ -16,20 +16,45 @@ export const STATIC_RELATIONS: AgentRelation[] = [
 interface RawAgent {
   id: string;
   workspace?: string;
-  model?: { primary?: string; fallbacks?: string[] };
+  default?: boolean;
+  model?: string | { primary?: string; fallbacks?: string[] };
   identity: {
     name: string;
     emoji: string;
     theme?: string;
     avatar?: string;
   };
-  tools?: { profile?: string };
+  tools?: { profile?: string; allow?: string[]; deny?: string[] };
   skills?: string[];
   sandbox?: { mode?: string };
-  heartbeat?: { every?: string; model?: string };
+  heartbeat?: { every?: string; target?: string; model?: string; prompt?: string };
   subagents?: { allowAgents?: string[] };
-  default?: boolean;
 }
+
+export interface AgentPatch {
+  name?: string;
+  emoji?: string;
+  theme?: string;
+  avatar?: string | null;
+  model?: string;
+  workspace?: string;
+  default?: boolean;
+  modelFallbacks?: string[];
+  toolsProfile?: string;
+  toolsAllow?: string[];
+  toolsDeny?: string[];
+  skills?: string[];
+  sandboxMode?: string;
+  heartbeatEvery?: string;
+  heartbeatTarget?: string;
+  heartbeatModel?: string;
+  heartbeatPrompt?: string;
+  subagentsAllowAgents?: string[];
+}
+
+const VALID_TOOLS_PROFILES = new Set(['minimal', 'coding', 'messaging', 'full']);
+const VALID_SANDBOX_MODES = new Set(['off', 'non-main', 'all']);
+const VALID_HEARTBEAT_TARGETS = new Set(['none', 'last', 'telegram', 'whatsapp', 'signal', 'discord']);
 
 const OPENCLAW_CONFIG = path.join(process.env.HOME ?? '/Users/manthis', '.openclaw', 'openclaw.json');
 
@@ -41,13 +66,20 @@ function writeRawConfig(config: unknown): void {
   fs.writeFileSync(OPENCLAW_CONFIG, JSON.stringify(config, null, 2), 'utf-8');
 }
 
+function getRawModel(raw: RawAgent): { primary?: string; fallbacks?: string[] } {
+  if (!raw.model) return {};
+  if (typeof raw.model === 'string') return { primary: raw.model };
+  return raw.model;
+}
+
 function buildAgent(raw: RawAgent): Agent {
   const ws = raw.workspace ?? '';
+  const modelObj = getRawModel(raw);
   const agent: Agent = {
     id: raw.id,
     name: raw.identity.name,
     emoji: raw.identity.emoji,
-    model: raw.model?.primary ?? 'unknown',
+    model: modelObj.primary ?? 'unknown',
     workspace: ws,
     theme: raw.identity.theme ?? '',
     avatar: raw.identity.avatar ?? null,
@@ -65,13 +97,24 @@ function buildAgent(raw: RawAgent): Agent {
       .filter((r) => r.source === raw.id)
       .map((r) => r.target),
   };
-  if (raw.tools?.profile) agent.toolsProfile = raw.tools.profile as ToolsProfile;
-  if (raw.skills) agent.skills = raw.skills;
-  if (raw.sandbox?.mode) agent.sandboxMode = raw.sandbox.mode as SandboxMode;
-  if (raw.heartbeat?.every) agent.heartbeat = { every: raw.heartbeat.every, model: raw.heartbeat.model };
-  if (raw.subagents?.allowAgents) agent.allowAgents = raw.subagents.allowAgents;
-  if (raw.model?.fallbacks) agent.modelFallbacks = raw.model.fallbacks;
-  if (raw.default !== undefined) agent.isDefault = raw.default;
+  if (raw.tools?.profile && VALID_TOOLS_PROFILES.has(raw.tools.profile)) {
+    agent.toolsProfile = raw.tools.profile as ToolsProfile;
+  }
+  if (raw.tools?.allow?.length) agent.toolsAllow = raw.tools.allow;
+  if (raw.tools?.deny?.length) agent.toolsDeny = raw.tools.deny;
+  if (raw.skills?.length) agent.skills = raw.skills;
+  if (raw.sandbox?.mode && VALID_SANDBOX_MODES.has(raw.sandbox.mode)) {
+    agent.sandboxMode = raw.sandbox.mode as SandboxMode;
+  }
+  if (raw.heartbeat?.every) agent.heartbeatEvery = raw.heartbeat.every;
+  if (raw.heartbeat?.target && VALID_HEARTBEAT_TARGETS.has(raw.heartbeat.target)) {
+    agent.heartbeatTarget = raw.heartbeat.target as HeartbeatTarget;
+  }
+  if (raw.heartbeat?.model) agent.heartbeatModel = raw.heartbeat.model;
+  if (raw.heartbeat?.prompt) agent.heartbeatPrompt = raw.heartbeat.prompt;
+  if (raw.subagents?.allowAgents?.length) agent.subagentsAllowAgents = raw.subagents.allowAgents;
+  if (modelObj.fallbacks?.length) agent.modelFallbacks = modelObj.fallbacks;
+  if (raw.default !== undefined) agent.default = raw.default;
   return agent;
 }
 
@@ -87,32 +130,58 @@ export function getAgent(id: string): Agent | null {
   return getAgents().find((a) => a.id === id) ?? null;
 }
 
-export function updateAgent(id: string, patch: Partial<{
-  name: string; emoji: string; theme: string; avatar: string; model: string; workspace: string;
-  toolsProfile: string; skills: string[]; sandboxMode: string;
-  heartbeatEvery: string; heartbeatModel: string;
-  allowAgents: string[]; modelFallbacks: string[]; isDefault: boolean;
-}>): Agent | null {
+export function updateAgent(id: string, patch: AgentPatch): Agent | null {
   const config = readRawConfig();
   const list = config.agents?.list;
   if (!list) return null;
   const idx = list.findIndex((a: RawAgent) => a.id === id);
   if (idx === -1) return null;
   const raw = list[idx];
+  // Identity
   if (patch.name !== undefined) raw.identity.name = patch.name;
   if (patch.emoji !== undefined) raw.identity.emoji = patch.emoji;
   if (patch.theme !== undefined) raw.identity.theme = patch.theme;
-  if (patch.avatar !== undefined) raw.identity.avatar = patch.avatar;
-  if (patch.model !== undefined) raw.model = { ...(raw.model ?? {}), primary: patch.model };
+  if (patch.avatar !== undefined) raw.identity.avatar = patch.avatar ?? undefined;
+  // Model (deep merge)
+  if (patch.model !== undefined || patch.modelFallbacks !== undefined) {
+    const existing = getRawModel(raw);
+    raw.model = {
+      ...existing,
+      ...(patch.model !== undefined ? { primary: patch.model } : {}),
+      ...(patch.modelFallbacks !== undefined ? { fallbacks: patch.modelFallbacks } : {}),
+    };
+  }
   if (patch.workspace !== undefined) raw.workspace = patch.workspace;
-  if (patch.toolsProfile !== undefined) { raw.tools = { ...(raw.tools ?? {}), profile: patch.toolsProfile }; }
+  if (patch.default !== undefined) raw.default = patch.default;
+  // Tools (deep merge)
+  if (patch.toolsProfile !== undefined || patch.toolsAllow !== undefined || patch.toolsDeny !== undefined) {
+    raw.tools = {
+      ...(raw.tools ?? {}),
+      ...(patch.toolsProfile !== undefined ? { profile: patch.toolsProfile } : {}),
+      ...(patch.toolsAllow !== undefined ? { allow: patch.toolsAllow } : {}),
+      ...(patch.toolsDeny !== undefined ? { deny: patch.toolsDeny } : {}),
+    };
+  }
   if (patch.skills !== undefined) raw.skills = patch.skills;
-  if (patch.sandboxMode !== undefined) { raw.sandbox = { ...(raw.sandbox ?? {}), mode: patch.sandboxMode }; }
-  if (patch.heartbeatEvery !== undefined) { raw.heartbeat = { ...(raw.heartbeat ?? {}), every: patch.heartbeatEvery }; }
-  if (patch.heartbeatModel !== undefined) { raw.heartbeat = { ...(raw.heartbeat ?? {}), model: patch.heartbeatModel }; }
-  if (patch.allowAgents !== undefined) { raw.subagents = { ...(raw.subagents ?? {}), allowAgents: patch.allowAgents }; }
-  if (patch.modelFallbacks !== undefined) { raw.model = { ...(raw.model ?? {}), fallbacks: patch.modelFallbacks }; }
-  if (patch.isDefault !== undefined) raw.default = patch.isDefault;
+  // Sandbox (deep merge)
+  if (patch.sandboxMode !== undefined) {
+    raw.sandbox = { ...(raw.sandbox ?? {}), mode: patch.sandboxMode };
+  }
+  // Heartbeat (deep merge)
+  if (patch.heartbeatEvery !== undefined || patch.heartbeatTarget !== undefined ||
+      patch.heartbeatModel !== undefined || patch.heartbeatPrompt !== undefined) {
+    raw.heartbeat = {
+      ...(raw.heartbeat ?? {}),
+      ...(patch.heartbeatEvery !== undefined ? { every: patch.heartbeatEvery } : {}),
+      ...(patch.heartbeatTarget !== undefined ? { target: patch.heartbeatTarget } : {}),
+      ...(patch.heartbeatModel !== undefined ? { model: patch.heartbeatModel } : {}),
+      ...(patch.heartbeatPrompt !== undefined ? { prompt: patch.heartbeatPrompt } : {}),
+    };
+  }
+  // Subagents (deep merge)
+  if (patch.subagentsAllowAgents !== undefined) {
+    raw.subagents = { ...(raw.subagents ?? {}), allowAgents: patch.subagentsAllowAgents };
+  }
   writeRawConfig(config);
   return buildAgent(raw);
 }
@@ -146,14 +215,18 @@ export function createAgent(data: {
   workspace: string;
   theme?: string;
   avatar?: string;
+  default?: boolean;
+  modelFallbacks?: string[];
   toolsProfile?: string;
+  toolsAllow?: string[];
+  toolsDeny?: string[];
   skills?: string[];
   sandboxMode?: string;
   heartbeatEvery?: string;
+  heartbeatTarget?: string;
   heartbeatModel?: string;
-  allowAgents?: string[];
-  modelFallbacks?: string[];
-  isDefault?: boolean;
+  heartbeatPrompt?: string;
+  subagentsAllowAgents?: string[];
 }): void {
   const config = readRawConfig();
   if (!config.agents) config.agents = { list: [] };
@@ -169,12 +242,25 @@ export function createAgent(data: {
       avatar: data.avatar || undefined,
     },
   };
-  if (data.toolsProfile) newRaw.tools = { profile: data.toolsProfile };
+  if (data.default !== undefined) newRaw.default = data.default;
+  if (data.toolsProfile || data.toolsAllow?.length || data.toolsDeny?.length) {
+    newRaw.tools = {
+      ...(data.toolsProfile ? { profile: data.toolsProfile } : {}),
+      ...(data.toolsAllow?.length ? { allow: data.toolsAllow } : {}),
+      ...(data.toolsDeny?.length ? { deny: data.toolsDeny } : {}),
+    };
+  }
   if (data.skills?.length) newRaw.skills = data.skills;
   if (data.sandboxMode) newRaw.sandbox = { mode: data.sandboxMode };
-  if (data.heartbeatEvery) newRaw.heartbeat = { every: data.heartbeatEvery, model: data.heartbeatModel };
-  if (data.allowAgents?.length) newRaw.subagents = { allowAgents: data.allowAgents };
-  if (data.isDefault !== undefined) newRaw.default = data.isDefault;
+  if (data.heartbeatEvery || data.heartbeatTarget || data.heartbeatModel || data.heartbeatPrompt) {
+    newRaw.heartbeat = {
+      ...(data.heartbeatEvery ? { every: data.heartbeatEvery } : {}),
+      ...(data.heartbeatTarget ? { target: data.heartbeatTarget } : {}),
+      ...(data.heartbeatModel ? { model: data.heartbeatModel } : {}),
+      ...(data.heartbeatPrompt ? { prompt: data.heartbeatPrompt } : {}),
+    };
+  }
+  if (data.subagentsAllowAgents?.length) newRaw.subagents = { allowAgents: data.subagentsAllowAgents };
   (config.agents.list as RawAgent[]).push(newRaw);
   writeRawConfig(config);
 }
