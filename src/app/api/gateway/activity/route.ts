@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { insertEvent } from '@/lib/activityDb';
 
 export const runtime = 'nodejs';
 
@@ -22,6 +23,26 @@ function inferOrigin(req: Request): string {
   const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || 'localhost:9000';
   const proto = req.headers.get('x-forwarded-proto') || 'http';
   return `${proto}://${host}`;
+}
+
+function makeSummary(type: string, data: unknown): string {
+  const d = data as Record<string, unknown> | null;
+  switch (type) {
+    case 'session_created':
+      return `Session created: ${d?.agent || d?.id || 'unknown'}`;
+    case 'session_closed':
+      return `Session closed: ${d?.agent || d?.id || 'unknown'}`;
+    case 'message_in':
+      return `Message in from ${d?.channel || d?.from || 'unknown'}`;
+    case 'message_out':
+      return `Message out to ${d?.channel || d?.to || 'unknown'}`;
+    case 'status':
+      return 'Status update';
+    case 'pong':
+      return 'Pong';
+    default:
+      return `${type}: ${JSON.stringify(data).slice(0, 80)}`;
+  }
 }
 
 export async function GET(req: Request) {
@@ -116,7 +137,13 @@ export async function GET(req: Request) {
           if (msg.ok) {
             connected = true;
             send('connected', { ok: true });
-            for (const ev of buffer) send('gateway_event', ev);
+            for (const ev of buffer) {
+              send('gateway_event', ev);
+              // persist buffered events
+              const evFrame = ev as { type: 'event'; event?: string; payload?: unknown };
+              const evType = evFrame.event || 'event';
+              insertEvent(evType, makeSummary(evType, evFrame.payload), ev);
+            }
             buffer.length = 0;
           } else {
             send('connected', { ok: false, error: msg.error ?? 'connect failed' });
@@ -125,6 +152,9 @@ export async function GET(req: Request) {
         }
 
         if (msg.type === 'event') {
+          const evFrame = msg as { type: 'event'; event?: string; payload?: unknown };
+          const evType = evFrame.event || 'event';
+          insertEvent(evType, makeSummary(evType, evFrame.payload), msg);
           send('gateway_event', msg);
         }
       });

@@ -42,8 +42,26 @@ function uuid(): string {
 export function useGatewayActivity() {
   const [connected, setConnected] = useState(false);
   const [events, setEvents] = useState<GatewayEvent[]>([]);
-
   const mountedRef = useRef(true);
+
+  // Seed from history on mount
+  useEffect(() => {
+    fetch('/api/gateway/events/history?limit=100')
+      .then((r) => r.ok ? r.json() : null)
+      .then((data: { events?: Array<{ id: number; ts: number; type: string; summary: string; raw: string }> } | null) => {
+        if (!mountedRef.current || !data?.events?.length) return;
+        const seeded: GatewayEvent[] = data.events.map((e) => ({
+          id: `hist-${e.id}`,
+          type: e.type,
+          timestamp: new Date(e.ts).toISOString(),
+          summary: e.summary,
+          raw: (() => { try { return JSON.parse(e.raw); } catch { return e.raw; } })(),
+        }));
+        // history comes newest-first from DB
+        setEvents(seeded);
+      })
+      .catch(() => { /* non-fatal */ });
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -74,8 +92,8 @@ export function useGatewayActivity() {
           summary: makeSummary(frame.event || "event", frame.payload),
           raw: frame,
         };
-        // newest first
-        setEvents((prev) => [ge, ...prev].slice(0, 50));
+        // newest first, cap at 200
+        setEvents((prev) => [ge, ...prev].slice(0, 200));
       } catch {
         // ignore
       }
