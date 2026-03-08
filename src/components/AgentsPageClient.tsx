@@ -501,7 +501,7 @@ export function AgentsPageClient() {
   const handleDeleted = (id: string) => setAgents((prev) => prev.filter((a) => a.id !== id));
 
   return (
-    <main className='flex-1 overflow-auto bg-slate-950 p-3 md:p-6'>
+    <main className='flex-1 bg-slate-950 p-3 md:p-6'>
       <div className='max-w-6xl mx-auto'>
         <div className='flex items-center justify-between mb-4 md:mb-6'>
           <div>
