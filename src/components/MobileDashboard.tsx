@@ -1,14 +1,14 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import type { Agent, AgentRelation } from '@/types/agent';
 
-const NODE_SIZE = 56;
+const NODE_SIZE = 40;
 const NODE_HALF = NODE_SIZE / 2;
-const COL_GAP = 80; // horizontal gap between nodes in same row
-const ROW_GAP = 100; // vertical gap between rows
-const PADDING = 20;
+const COL_GAP = 60;
+const ROW_GAP = 80;
+const PADDING = 24;
+const MAX_PER_ROW = 4;
 
 interface NodePos {
   agent: Agent;
@@ -17,14 +17,7 @@ interface NodePos {
 }
 
 function buildLayout(agents: Agent[], relations: AgentRelation[]): NodePos[] {
-  // Determine hierarchy levels
-  // Level 0: agents with no incoming relations (roots)
-  // Level 1: agents that are targets of level 0
-  // Level 2: rest
-
-  const allIds = agents.map((a) => a.id);
   const targetIds = new Set(relations.map((r) => r.target));
-  const sourceIds = new Set(relations.map((r) => r.source));
 
   const roots = agents.filter((a) => !targetIds.has(a.id));
   const level1Ids = new Set<string>();
@@ -34,12 +27,20 @@ function buildLayout(agents: Agent[], relations: AgentRelation[]): NodePos[] {
   const level2 = agents.filter((a) => !roots.find((r) => r.id === a.id) && !level1Ids.has(a.id));
   const level1 = agents.filter((a) => level1Ids.has(a.id));
 
-  const levels = [roots, level1, level2].filter((l) => l.length > 0);
+  const rawLevels = [roots, level1, level2].filter((l) => l.length > 0);
+
+  // Split levels into rows of MAX_PER_ROW
+  const rows: Agent[][] = [];
+  for (const level of rawLevels) {
+    for (let i = 0; i < level.length; i += MAX_PER_ROW) {
+      rows.push(level.slice(i, i + MAX_PER_ROW));
+    }
+  }
 
   const positions: NodePos[] = [];
-  levels.forEach((level, rowIndex) => {
-    const totalWidth = level.length * NODE_SIZE + (level.length - 1) * COL_GAP;
-    level.forEach((agent, colIndex) => {
+  rows.forEach((row, rowIndex) => {
+    const rowWidth = row.length * NODE_SIZE + (row.length - 1) * COL_GAP;
+    row.forEach((agent, colIndex) => {
       const x = PADDING + colIndex * (NODE_SIZE + COL_GAP) + NODE_HALF;
       const y = PADDING + rowIndex * (NODE_SIZE + ROW_GAP) + NODE_HALF;
       positions.push({ agent, x, y });
@@ -58,7 +59,6 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
       onClick={onClick}
       style={{ cursor: 'pointer' }}
     >
-      {/* Circle background */}
       <circle
         cx={NODE_HALF}
         cy={NODE_HALF}
@@ -68,25 +68,34 @@ function AvatarNode({ agent, x, y, onClick }: { agent: Agent; x: number; y: numb
         strokeWidth={2}
       />
 
-      {/* Emoji fallback (always render, hidden by image if loaded) */}
-      {(!agent.avatar || imgError) && (
+      {imgError ? (
         <text
           x={NODE_HALF}
-          y={NODE_HALF + 8}
+          y={NODE_HALF + 7}
           textAnchor="middle"
-          fontSize={26}
+          fontSize={20}
           style={{ userSelect: 'none' }}
         >
           {agent.emoji}
         </text>
+      ) : (
+        <image
+          href={`/api/agents/${agent.id}/avatar`}
+          x={2}
+          y={2}
+          width={NODE_SIZE - 4}
+          height={NODE_SIZE - 4}
+          clipPath={`circle(${NODE_HALF - 2}px at ${NODE_HALF - 2}px ${NODE_HALF - 2}px)`}
+          preserveAspectRatio="xMidYMid slice"
+          onError={() => setImgError(true)}
+        />
       )}
 
-      {/* Name below */}
       <text
         x={NODE_HALF}
-        y={NODE_SIZE + 16}
+        y={NODE_SIZE + 14}
         textAnchor="middle"
-        fontSize={11}
+        fontSize={10}
         fill="#94a3b8"
         style={{ userSelect: 'none' }}
       >
@@ -110,7 +119,7 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
   }
 
   const maxX = Math.max(...positions.map((p) => p.x)) + NODE_HALF + PADDING;
-  const maxY = Math.max(...positions.map((p) => p.y)) + NODE_HALF + 24 + PADDING; // 24 for label
+  const maxY = Math.max(...positions.map((p) => p.y)) + NODE_HALF + 20 + PADDING;
 
   const handleClick = (agentId: string) => {
     router.push(`/agents?open=${agentId}`);
@@ -119,12 +128,11 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
   return (
     <div className="w-full overflow-x-auto py-4">
       <svg
-        width={maxX}
-        height={maxY}
+        viewBox={`0 0 ${maxX} ${maxY}`}
+        width="100%"
+        style={{ display: 'block', maxWidth: maxX }}
         className="mx-auto"
-        style={{ display: 'block' }}
       >
-        {/* Relations */}
         {relations.map((rel, i) => {
           const from = positions.find((p) => p.agent.id === rel.source);
           const to = positions.find((p) => p.agent.id === rel.target);
@@ -143,7 +151,6 @@ export function MobileDashboard({ agents, relations }: MobileDashboardProps) {
           );
         })}
 
-        {/* Nodes */}
         {positions.map(({ agent, x, y }) => (
           <AvatarNode
             key={agent.id}
