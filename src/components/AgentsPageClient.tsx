@@ -13,6 +13,17 @@ import { AgentMultiSelect } from './agents/AgentMultiSelect';
 import { Trash2 } from 'lucide-react';
 import { ActivitySparkline } from './ActivitySparkline';
 
+type AgentActivityInfo = { lastActiveAt: number | null; sessionsToday: number; lastModel: string | null };
+
+function relativeTime(ms: number | null): string {
+  if (ms === null) return 'never';
+  const diff = Date.now() - ms;
+  if (diff < 60_000) return 'just now';
+  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
+  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
+  return `${Math.floor(diff / 86_400_000)}d ago`;
+}
+
 const WORKSPACE_FILES = ['SOUL', 'IDENTITY', 'TOOLS', 'MEMORY', 'USER', 'AGENTS', 'HEARTBEAT'] as const;
 type WorkspaceFile = typeof WORKSPACE_FILES[number];
 
@@ -503,6 +514,7 @@ export function AgentsPageClient() {
   const [selected, setSelected] = useState<Agent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [activityData, setActivityData] = useState<Record<string, { date: string; count: number }[]>>({});
+  const [agentActivity, setAgentActivity] = useState<Record<string, AgentActivityInfo>>({});
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -527,6 +539,19 @@ export function AgentsPageClient() {
 
 
   useEffect(() => { loadAgents(); }, [loadAgents]);
+  // Fetch aggregate activity (last active, sessions today, last model)
+  useEffect(() => {
+    const fetchActivity = () => {
+      fetch('/api/agents/activity')
+        .then((r) => r.json())
+        .then((data: Record<string, AgentActivityInfo>) => setAgentActivity(data))
+        .catch(() => {/* ignore */});
+    };
+    fetchActivity();
+    const id = setInterval(fetchActivity, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
   // Poll agent statuses every 5 seconds
   useEffect(() => {
     const fetchStatuses = () => {
@@ -596,6 +621,15 @@ export function AgentsPageClient() {
                   <p className='text-gray-500 dark:text-slate-400 text-xs font-mono truncate max-w-[60%]'>{agent.model}</p>
                   <StatusBadge status={agent.status} />
                 </div>
+                {agentActivity[agent.id] && (
+                  <div className='mt-2 space-y-0.5'>
+                    <p className='text-gray-400 dark:text-slate-500 text-xs'>🕐 {relativeTime(agentActivity[agent.id].lastActiveAt)}</p>
+                    <p className='text-gray-400 dark:text-slate-500 text-xs'>📊 {agentActivity[agent.id].sessionsToday} session{agentActivity[agent.id].sessionsToday !== 1 ? 's' : ''} today</p>
+                    {agentActivity[agent.id].lastModel && (
+                      <p className='text-gray-400 dark:text-slate-500 text-xs font-mono truncate'>🤖 {agentActivity[agent.id].lastModel}</p>
+                    )}
+                  </div>
+                )}
                 {activityData[agent.id] && (
                   <ActivitySparkline data={activityData[agent.id]} />
                 )}
