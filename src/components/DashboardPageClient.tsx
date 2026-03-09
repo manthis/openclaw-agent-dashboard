@@ -30,6 +30,30 @@ function formatUptime(seconds: number) {
   return h + 'h ' + m + 'm';
 }
 
+function LivePulse({ ts }: { ts: number | undefined }) {
+  const [label, setLabel] = useState<string>('');
+
+  useEffect(() => {
+    if (!ts) return;
+    const update = () => {
+      const diff = Math.round((Date.now() - ts) / 1000);
+      setLabel(diff <= 1 ? 'just now' : `${diff}s ago`);
+    };
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [ts]);
+
+  if (!ts) return null;
+
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-slate-500">
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse inline-block" />
+      <span>Live &middot; updated {label}</span>
+    </div>
+  );
+}
+
 const TYPE_BADGE_COLORS: Record<string, string> = {
   session_created: 'bg-emerald-500/20 text-emerald-400',
   session_closed: 'bg-red-500/20 text-red-400',
@@ -99,7 +123,10 @@ export function DashboardPageClient() {
         </div>
 
         <section>
-          <h2 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-3">Real-time Metrics</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider">Real-time Metrics</h2>
+            <LivePulse ts={live?.ts} />
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 mb-2">
@@ -109,7 +136,7 @@ export function DashboardPageClient() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">Gateway</span>
               </div>
               <p className={`text-lg font-semibold ${gatewayConnected ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                {gatewayConnected === undefined ? '—' : (gatewayConnected ? 'Connected' : 'Offline')}
+                {gatewayConnected === undefined ? '\u2014' : (gatewayConnected ? 'Connected' : 'Offline')}
               </p>
             </div>
 
@@ -119,7 +146,7 @@ export function DashboardPageClient() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">Sessions</span>
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {sessionsActive5m !== undefined ? sessionsActive5m : '—'}
+                {sessionsActive5m !== undefined ? sessionsActive5m : '\u2014'}
               </p>
             </div>
 
@@ -129,7 +156,7 @@ export function DashboardPageClient() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">CPU</span>
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {cpuPercent !== undefined ? cpuPercent + '%' : '—'}
+                {cpuPercent !== undefined ? cpuPercent + '%' : '\u2014'}
               </p>
               {loadAvg !== undefined && <p className="text-xs text-gray-400 dark:text-slate-500">load {loadAvg}</p>}
             </div>
@@ -140,7 +167,7 @@ export function DashboardPageClient() {
                 <span className="text-xs text-gray-500 dark:text-slate-400">Memory</span>
               </div>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                {memPercent !== undefined ? memPercent + '%' : '—'}
+                {memPercent !== undefined ? memPercent + '%' : '\u2014'}
               </p>
               {memUsed !== undefined && memTotal !== undefined && (
                 <p className="text-xs text-gray-400 dark:text-slate-500">{formatBytes(memUsed)} / {formatBytes(memTotal)}</p>
@@ -217,7 +244,7 @@ export function DashboardPageClient() {
                 ] as [string, string | number | undefined][]).map(([key, val], i) => (
                   <tr key={key} className={i % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-gray-50 dark:bg-slate-800/30'}>
                     <td className="px-4 py-3 text-gray-500 dark:text-slate-400 font-medium w-1/3">{key}</td>
-                    <td className="px-4 py-3 text-gray-900 dark:text-white font-mono">{val !== undefined ? String(val) : '—'}</td>
+                    <td className="px-4 py-3 text-gray-900 dark:text-white font-mono">{val !== undefined ? String(val) : '\u2014'}</td>
                   </tr>
                 ))}
               </tbody>

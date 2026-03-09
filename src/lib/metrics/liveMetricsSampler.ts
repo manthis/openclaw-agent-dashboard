@@ -144,7 +144,7 @@ declare global {
 export function getLiveMetricsSampler() {
   if (!global.__liveMetricsSampler) {
     global.__liveMetricsSampler = new LiveMetricsSampler();
-    global.__liveMetricsSampler.start(5000);
+    global.__liveMetricsSampler.start(3000);
   }
   return global.__liveMetricsSampler;
 }

@@ -17,14 +17,18 @@ type Options = {
   pollFallback?: () => Promise<LiveMetricsSnapshot | null>;
 };
 
+const SSE_PATH = '/api/metrics/stream';
+const BACKOFF_INITIAL = 1000;
+const BACKOFF_MAX = 30_000;
+const BACKOFF_FACTOR = 2;
+const POLL_INTERVAL = 5000;
+
 /**
- * Subscribes to /api/metrics/stream (SSE) and keeps the last snapshot in state.
- * Falls back to polling (every 5s) if SSE fails or is unsupported.
+ * Subscribes to /api/metrics/stream (SSE) with exponential-backoff auto-reconnect.
+ * Falls back to polling (every 5s) if EventSource is unsupported.
  */
 export function useLiveMetrics(opts: Options = {}) {
   const [metrics, setMetrics] = useState<LiveMetricsSnapshot | null>(null);
-  const startedFallback = useRef(false);
-
   const pollFallbackRef = useRef(opts.pollFallback);
 
   useEffect(() => {
@@ -32,71 +36,70 @@ export function useLiveMetrics(opts: Options = {}) {
   }, [opts.pollFallback]);
 
   useEffect(() => {
-    let alive = true;
-    let es: EventSource | null = null;
-    let pollId: number | null = null;
-
-    async function startPolling() {
-      if (startedFallback.current) return;
-      startedFallback.current = true;
-
+    // SSE not supported (old Safari, SSR) → poll
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      let alive = true;
+      let pollId: ReturnType<typeof setInterval> | null = null;
       const poll = async () => {
         try {
           const snap = await pollFallbackRef.current?.();
-          if (!alive) return;
-          if (snap) setMetrics(snap);
-        } catch {
-          // ignore
-        }
+          if (alive && snap) setMetrics(snap);
+        } catch { /* ignore */ }
       };
-
-      await poll();
-      pollId = window.setInterval(poll, 5000);
-    }
-
-    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
-      void startPolling();
+      void poll();
+      pollId = setInterval(() => void poll(), POLL_INTERVAL);
       return () => {
         alive = false;
-        if (pollId) window.clearInterval(pollId);
+        if (pollId) clearInterval(pollId);
       };
     }
 
-    try {
-      es = new EventSource('/api/metrics/stream');
+    let alive = true;
+    let es: EventSource | null = null;
+    let backoff = BACKOFF_INITIAL;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
 
-      es.addEventListener('metrics', (e) => {
-        try {
-          const snap = JSON.parse((e as MessageEvent).data) as LiveMetricsSnapshot;
+    function connect() {
+      if (!alive) return;
+      try {
+        es = new EventSource(SSE_PATH);
+
+        es.addEventListener('metrics', (e) => {
+          try {
+            const snap = JSON.parse((e as MessageEvent).data) as LiveMetricsSnapshot;
+            if (!alive) return;
+            setMetrics(snap);
+            // Reset backoff on successful message
+            backoff = BACKOFF_INITIAL;
+          } catch { /* ignore */ }
+        });
+
+        es.addEventListener('error', () => {
           if (!alive) return;
-          setMetrics(snap);
-        } catch {
-          // ignore
-        }
-      });
+          try { es?.close(); } catch { /* ignore */ }
+          es = null;
+          // Reconnect with exponential backoff
+          reconnectTimer = setTimeout(() => {
+            backoff = Math.min(backoff * BACKOFF_FACTOR, BACKOFF_MAX);
+            connect();
+          }, backoff);
+        });
 
-      es.addEventListener('error', () => {
-        // If the connection drops, fall back to polling.
-        try {
-          es?.close();
-        } catch {
-          // ignore
-        }
-        es = null;
-        void startPolling();
-      });
-    } catch {
-      void startPolling();
+      } catch {
+        // EventSource constructor threw (shouldn't happen)
+        reconnectTimer = setTimeout(() => {
+          backoff = Math.min(backoff * BACKOFF_FACTOR, BACKOFF_MAX);
+          connect();
+        }, backoff);
+      }
     }
+
+    connect();
 
     return () => {
       alive = false;
-      try {
-        es?.close();
-      } catch {
-        // ignore
-      }
-      if (pollId) window.clearInterval(pollId);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      try { es?.close(); } catch { /* ignore */ }
     };
   }, []);
 
