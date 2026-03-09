@@ -31,6 +31,7 @@ const rawConfig = {
 jest.mock('fs', () => ({
   readFileSync: jest.fn(() => JSON.stringify(rawConfig)),
   writeFileSync: jest.fn(),
+  statSync: jest.fn(() => ({ mtimeMs: Date.now() })),
 }));
 
 const mockFs = fs as jest.Mocked<typeof fs>;
@@ -188,9 +189,39 @@ describe('agents lib', () => {
   });
 
   describe('fetchActiveAgentIds', () => {
+    const FIVE_MIN = 5 * 60 * 1000;
+
     it('returns empty set when CLI returns no sessions', () => {
       const active = fetchActiveAgentIds();
       expect(active.size).toBe(0);
+    });
+
+    it('includes active agents from fresh agent-activity.json', () => {
+      const mockFsLocal = fs as jest.Mocked<typeof fs>;
+      mockFsLocal.statSync.mockReturnValueOnce({ mtimeMs: Date.now() } as fs.Stats);
+      mockFsLocal.readFileSync.mockReturnValueOnce(JSON.stringify({ tars: 'active', mother: 'idle' }));
+      const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+      execFileSync.mockReturnValueOnce(JSON.stringify({ sessions: [] }));
+      const active = fetchActiveAgentIds();
+      expect(active.has('tars')).toBe(true);
+      expect(active.has('mother')).toBe(false);
+    });
+
+    it('ignores agent-activity.json when mtime is older than 5 minutes', () => {
+      const mockFsLocal = fs as jest.Mocked<typeof fs>;
+      mockFsLocal.statSync.mockReturnValueOnce({ mtimeMs: Date.now() - FIVE_MIN - 1000 } as fs.Stats);
+      const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+      execFileSync.mockReturnValueOnce(JSON.stringify({ sessions: [] }));
+      const active = fetchActiveAgentIds();
+      expect(active.has('tars')).toBe(false);
+    });
+
+    it('does not crash when agent-activity.json does not exist', () => {
+      const mockFsLocal = fs as jest.Mocked<typeof fs>;
+      mockFsLocal.statSync.mockImplementationOnce(() => { throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' }); });
+      const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+      execFileSync.mockReturnValueOnce(JSON.stringify({ sessions: [] }));
+      expect(() => fetchActiveAgentIds()).not.toThrow();
     });
 
     it('returns set of agentIds from CLI sessions', () => {

@@ -217,7 +217,22 @@ const AGENT_ACTIVITY_FILE = path.join(process.env.HOME ?? '/Users/manthis', '.op
 export function fetchActiveAgentIds(): Set<string> {
   const active = new Set<string>();
 
-  // Live openclaw sessions (updated within 5 min)
+  // Primary source: agent-activity.json with 5-minute mtime TTL
+  try {
+    const stat = fs.statSync(AGENT_ACTIVITY_FILE);
+    const ageMs = Date.now() - stat.mtimeMs;
+    if (ageMs <= 5 * 60 * 1000) {
+      const raw = fs.readFileSync(AGENT_ACTIVITY_FILE, 'utf-8');
+      const data = JSON.parse(raw) as Record<string, string>;
+      Object.entries(data).forEach(([id, status]) => {
+        if (status === 'active') active.add(id);
+      });
+    }
+  } catch {
+    // File missing or unreadable — skip
+  }
+
+  // Secondary source: live openclaw sessions (updated within 5 min)
   try {
     const output = execFileSync('openclaw', ['sessions', '--active', '5', '--all-agents', '--json'], {
       timeout: 5000,
