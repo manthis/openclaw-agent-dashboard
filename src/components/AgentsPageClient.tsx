@@ -11,7 +11,7 @@ import { ModelMultiSelect } from './agents/ModelMultiSelect';
 import { DirectoryPickerField } from './agents/DirectoryPickerField';
 import { AgentMultiSelect } from './agents/AgentMultiSelect';
 import { Trash2 } from 'lucide-react';
-import { ActivitySparkline } from './ActivitySparkline';
+import { AgentActivityTimeline } from './AgentActivityTimeline';
 
 type AgentActivityInfo = { lastActiveAt: number | null; sessionsToday: number; lastModel: string | null };
 
@@ -513,7 +513,6 @@ export function AgentsPageClient() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<Agent | null>(null);
   const [showAdd, setShowAdd] = useState(false);
-  const [activityData, setActivityData] = useState<Record<string, { date: string; count: number }[]>>({});
   const [agentActivity, setAgentActivity] = useState<Record<string, AgentActivityInfo>>({});
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -524,18 +523,6 @@ export function AgentsPageClient() {
       .then((data: Agent[]) => { setAgents(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, []);
-  // Fetch activity sparkline data for each agent
-  useEffect(() => {
-    if (agents.length === 0) return;
-    agents.forEach((agent) => {
-      fetch(`/api/agents/${agent.id}/activity`)
-        .then((r) => r.json())
-        .then((data: { date: string; count: number }[]) => {
-          setActivityData((prev) => ({ ...prev, [agent.id]: data }));
-        })
-        .catch(() => {/* ignore */});
-    });
-  }, [agents]);
 
 
   useEffect(() => { loadAgents(); }, [loadAgents]);
@@ -630,9 +617,7 @@ export function AgentsPageClient() {
                     )}
                   </div>
                 )}
-                {activityData[agent.id] && (
-                  <ActivitySparkline data={activityData[agent.id]} />
-                )}
+                <AgentActivityTimeline agentId={agent.id} />
               </button>
             ))}
           </div>
