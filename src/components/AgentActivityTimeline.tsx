@@ -1,110 +1,44 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
-interface TimelineData {
-  buckets: number[];
+interface Activity {
+  timestamp: string | number | Date;
+  [key: string]: unknown;
 }
 
-function formatBucketTime(index: number, total: number): string {
-  // index 0 = 24h ago, index total-1 = now
-  const nowMs = Date.now();
-  const windowMs = 24 * 60 * 60 * 1000;
-  const minuteMs = 60 * 1000;
-  const offsetFromNow = (total - 1 - index) * minuteMs;
-  const ts = nowMs - offsetFromNow;
-  const d = new Date(ts);
-  const hh = d.getHours().toString().padStart(2, '0');
-  const mm = d.getMinutes().toString().padStart(2, '0');
-  return `${hh}:${mm}`;
-}
-
-export function AgentActivityTimeline({ agentId, color = '#6366f1' }: { agentId: string; color?: string }) {
-  const [data, setData] = useState<TimelineData | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string } | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch(`/api/agents/activity/timeline?agentId=${encodeURIComponent(agentId)}`)
-      .then((r) => r.json())
-      .then((d: TimelineData) => { if (!cancelled) setData(d); })
-      .catch(() => {/* ignore */});
-    return () => { cancelled = true; };
-  }, [agentId]);
-
-  // Group 1440 1-min buckets into 288 5-min groups for display
-  const groups = useMemo(() => {
-    if (!data) return [];
-    const raw = data.buckets;
-    const GROUP_SIZE = 5;
-    const result: { active: boolean; startIdx: number }[] = [];
-    for (let i = 0; i < raw.length; i += GROUP_SIZE) {
-      const slice = raw.slice(i, i + GROUP_SIZE);
-      result.push({ active: slice.some((v) => v > 0), startIdx: i });
+export function AgentActivityTimeline({ activities = [], agentId, color = '#6366f1' }: { activities?: Activity[]; agentId?: string; color?: string }) {
+  const activeBuckets = useMemo(() => {
+    const set = new Set<number>();
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const midnightMs = todayMidnight.getTime();
+    for (const a of activities) {
+      const ts = new Date(a.timestamp).getTime();
+      const minutesSinceMidnight = (ts - midnightMs) / 60000;
+      if (minutesSinceMidnight >= 0 && minutesSinceMidnight < 1440) {
+        set.add(Math.floor(minutesSinceMidnight / 15));
+      }
     }
-    return result;
-  }, [data]);
-
-  const height = 32;
-  const barW = 2;
-  const gap = 0.5;
-  const total = groups.length; // 288
-  const svgWidth = total * (barW + gap);
-
-  if (!data) {
-    return (
-      <div className="w-full mt-3" style={{ height: `${height}px` }}>
-        <div className="w-full h-full bg-slate-800/30 rounded animate-pulse" />
-      </div>
-    );
-  }
+    return set;
+  }, [activities]);
 
   return (
-    <div className="relative w-full mt-3" style={{ height: `${height}px` }}>
-      <svg
-        viewBox={`0 0 ${svgWidth} ${height}`}
-        preserveAspectRatio="none"
-        className="w-full h-full"
-      >
-        {groups.map((g, i) => {
-          const x = i * (barW + gap);
-          return (
-            <rect
-              key={i}
-              x={x}
-              y={0}
-              width={barW}
-              height={height}
-              rx={0.3}
-              fill={g.active ? color : 'rgba(100,116,139,0.12)'}
-              onMouseEnter={(e) => {
-                const svgEl = (e.currentTarget as SVGElement).closest('svg');
-                const rect = svgEl?.parentElement?.getBoundingClientRect();
-                if (rect) {
-                  const label = formatBucketTime(g.startIdx, 1440);
-                  setTooltip({
-                    x: rect.left + (i + 0.5) * (rect.width / total),
-                    y: rect.top,
-                    label,
-                  });
-                }
-              }}
-              onMouseLeave={() => setTooltip(null)}
-            />
-          );
-        })}
+    <div className="relative w-full mt-3">
+      <svg width="100%" viewBox="0 0 96 60" preserveAspectRatio="none">
+        {Array.from({ length: 96 }, (_, i) => (
+          <rect key={`bg-${i}`} x={i} y={0} width={0.9} height={48} fill="rgba(99,102,241,0.1)" />
+        ))}
+        {Array.from({ length: 96 }, (_, i) =>
+          activeBuckets.has(i) ? (
+            <rect key={`active-${i}`} x={i} y={0} width={0.9} height={48} fill={color} rx={2} />
+          ) : null
+        )}
+        <text x={0} y={58} textAnchor="start" fontSize={3} fill="rgba(99,102,241,0.5)">00h</text>
+        <text x={24} y={58} textAnchor="middle" fontSize={3} fill="rgba(99,102,241,0.5)">06h</text>
+        <text x={48} y={58} textAnchor="middle" fontSize={3} fill="rgba(99,102,241,0.5)">12h</text>
+        <text x={72} y={58} textAnchor="middle" fontSize={3} fill="rgba(99,102,241,0.5)">18h</text>
+        <text x={96} y={58} textAnchor="end" fontSize={3} fill="rgba(99,102,241,0.5)">24h</text>
       </svg>
-      {tooltip && (
-        <div
-          className="fixed z-50 pointer-events-none bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-800 dark:text-slate-200 text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap"
-          style={{
-            left: tooltip.x,
-            top: tooltip.y,
-            transform: 'translate(-50%, -120%)',
-          }}
-        >
-          {tooltip.label}
-        </div>
-      )}
     </div>
   );
 }
