@@ -119,12 +119,21 @@ function buildAgent(raw: RawAgent): Agent {
   return agent;
 }
 
-export function getAgents(): Agent[] {
+function getAgentsRaw(): RawAgent[] {
   const config = readOpenClawConfig();
   if (!config) return [];
-  const agentsList = (config as { agents?: { list?: RawAgent[] } }).agents?.list;
-  if (!agentsList) return [];
-  return agentsList.map(buildAgent);
+  return (config as { agents?: { list?: RawAgent[] } }).agents?.list ?? [];
+}
+
+export function getAgents(): Agent[] {
+  const rawList = getAgentsRaw();
+  if (!rawList.length) return [];
+  const agents = rawList.map(buildAgent);
+  const active = fetchActiveAgentIds();
+  agents.forEach((a) => {
+    if (active.has(a.id)) a.status = 'active';
+  });
+  return agents;
 }
 
 export function getAgent(id: string): Agent | null {
@@ -204,25 +213,22 @@ export function getAgentsGraph(): AgentsGraph {
 
 const AGENT_ACTIVITY_FILE = path.join(process.env.HOME ?? '/Users/manthis', '.openclaw', 'agent-activity.json');
 
-export function getAgentsStatus(): Record<string, 'active' | 'idle'> {
-  const result: Record<string, 'active' | 'idle'> = {};
-  getAgents().forEach((a) => { result[a.id] = 'idle'; });
 
-  // 1. Read activity tracker (~/.openclaw/agent-activity.json)
-  // Format: { "agentId": "active"|"idle" } — written directly by agents
+export function fetchActiveAgentIds(): Set<string> {
+  const active = new Set<string>();
+
+  // Read activity tracker (~/.openclaw/agent-activity.json)
   try {
     const raw = fs.readFileSync(AGENT_ACTIVITY_FILE, 'utf-8');
     const activity = JSON.parse(raw) as Record<string, string>;
     for (const [agentId, status] of Object.entries(activity)) {
-      if (status === 'active' || status === 'idle') {
-        result[agentId] = status;
-      }
+      if (status === 'active') active.add(agentId);
     }
   } catch {
-    // File absent or unreadable — no activity data
+    // File absent or unreadable
   }
 
-  // 2. Merge with live openclaw sessions (for hal9000)
+  // Live openclaw sessions (updated within 5 min)
   try {
     const output = execFileSync('openclaw', ['sessions', '--active', '5', '--all-agents', '--json'], {
       timeout: 5000,
@@ -230,14 +236,20 @@ export function getAgentsStatus(): Record<string, 'active' | 'idle'> {
     });
     const data = JSON.parse(output) as { sessions?: Array<{ agentId: string }> };
     if (data.sessions && data.sessions.length > 0) {
-      data.sessions.forEach((s) => {
-        result[s.agentId] = 'active';
-      });
+      data.sessions.forEach((s) => active.add(s.agentId));
     }
   } catch {
-    // Fallback to file-based status if CLI unavailable
+    // CLI unavailable
   }
 
+  return active;
+}
+
+export function getAgentsStatus(): Record<string, 'active' | 'idle'> {
+  const result: Record<string, 'active' | 'idle'> = {};
+  getAgentsRaw().forEach((raw) => { result[raw.id] = 'idle'; });
+  const active = fetchActiveAgentIds();
+  active.forEach((id) => { if (id in result) result[id] = 'active'; });
   return result;
 }
 

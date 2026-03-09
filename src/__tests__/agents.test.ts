@@ -1,4 +1,4 @@
-import { getAgents, getAgent, getAgentsGraph, getAgentsStatus, STATIC_RELATIONS, updateAgent, deleteAgent, createAgent } from '@/lib/agents';
+import { getAgents, getAgent, getAgentsGraph, getAgentsStatus, fetchActiveAgentIds, STATIC_RELATIONS, updateAgent, deleteAgent, createAgent } from '@/lib/agents';
 import fs from 'fs';
 
 jest.mock('child_process', () => ({
@@ -36,11 +36,36 @@ jest.mock('fs', () => ({
 const mockFs = fs as jest.Mocked<typeof fs>;
 
 describe('agents lib', () => {
-  it('getAgents returns all agents', () => {
+  it('getAgents returns all agents with idle status when no active sessions', () => {
     const agents = getAgents();
     expect(agents).toHaveLength(2);
     expect(agents[0].id).toBe('hal9000');
     expect(agents[0].status).toBe('idle');
+  });
+
+  it('getAgents marks agent as active when CLI returns a session with matching agentId', () => {
+    const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+    execFileSync.mockReturnValueOnce(JSON.stringify({ sessions: [{ agentId: 'hal9000', key: 'x', updatedAt: new Date().toISOString() }] }));
+    const agents = getAgents();
+    const hal = agents.find((a) => a.id === 'hal9000');
+    expect(hal?.status).toBe('active');
+    // mother should remain idle
+    const mother = agents.find((a) => a.id === 'mother');
+    expect(mother?.status).toBe('idle');
+  });
+
+  it('getAgents keeps all agents idle when CLI returns empty sessions', () => {
+    const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+    execFileSync.mockReturnValueOnce(JSON.stringify({ sessions: [] }));
+    const agents = getAgents();
+    agents.forEach((a) => expect(a.status).toBe('idle'));
+  });
+
+  it('getAgents keeps all agents idle when CLI throws', () => {
+    const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+    execFileSync.mockImplementationOnce(() => { throw new Error('CLI unavailable'); });
+    const agents = getAgents();
+    agents.forEach((a) => expect(a.status).toBe('idle'));
   });
 
   it('getAgent returns agent by id', () => {
@@ -58,8 +83,17 @@ describe('agents lib', () => {
     expect(graph.relations).toEqual(STATIC_RELATIONS);
   });
 
-  it('getAgentsStatus returns idle for all', () => {
+  it('getAgentsStatus returns idle for all when no active sessions', () => {
     const status = getAgentsStatus();
+    expect(status['hal9000']).toBe('idle');
+    expect(status['mother']).toBe('idle');
+  });
+
+  it('getAgentsStatus marks agent active when CLI returns session with matching agentId', () => {
+    const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+    execFileSync.mockReturnValueOnce(JSON.stringify({ sessions: [{ agentId: 'mother', key: 'y', updatedAt: new Date().toISOString() }] }));
+    const status = getAgentsStatus();
+    expect(status['mother']).toBe('active');
     expect(status['hal9000']).toBe('idle');
   });
 
@@ -150,6 +184,29 @@ describe('agents lib', () => {
       expect(mockFs.writeFileSync).toHaveBeenCalled();
       const written = JSON.parse(mockFs.writeFileSync.mock.calls[0][1] as string);
       expect(written.agents.list).toHaveLength(1);
+    });
+  });
+
+  describe('fetchActiveAgentIds', () => {
+    it('returns empty set when CLI returns no sessions', () => {
+      const active = fetchActiveAgentIds();
+      expect(active.size).toBe(0);
+    });
+
+    it('returns set of agentIds from CLI sessions', () => {
+      const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+      execFileSync.mockReturnValueOnce(JSON.stringify({ sessions: [{ agentId: 'hal9000' }, { agentId: 'tars' }] }));
+      const active = fetchActiveAgentIds();
+      expect(active.has('hal9000')).toBe(true);
+      expect(active.has('tars')).toBe(true);
+      expect(active.has('mother')).toBe(false);
+    });
+
+    it('returns empty set when CLI throws', () => {
+      const { execFileSync } = require('child_process') as { execFileSync: jest.Mock };
+      execFileSync.mockImplementationOnce(() => { throw new Error('fail'); });
+      const active = fetchActiveAgentIds();
+      expect(active.size).toBe(0);
     });
   });
 
