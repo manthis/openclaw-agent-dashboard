@@ -12,22 +12,25 @@ interface AgentsGraph {
 export function AgentsMapClient() {
   const [graph, setGraph] = useState<AgentsGraph | null>(null);
 
-  const fetchGraph = async () => {
-    try {
-      const res = await fetch('/api/agents/graph', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json() as AgentsGraph;
-        setGraph(data);
-      }
-    } catch {
-      // silently retry on next poll
-    }
-  };
-
   useEffect(() => {
-    fetchGraph();
-    const interval = setInterval(fetchGraph, 10_000);
-    return () => clearInterval(interval);
+    const es = new EventSource('/api/agents/stream');
+
+    es.addEventListener('agents', (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data as string) as AgentsGraph;
+        setGraph(data);
+      } catch {
+        // ignore parse errors
+      }
+    });
+
+    es.onerror = () => {
+      // EventSource auto-reconnects on error
+    };
+
+    return () => {
+      es.close();
+    };
   }, []);
 
   if (!graph) {
